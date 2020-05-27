@@ -1,13 +1,55 @@
+/* README */
+// # This project is developed by Ayush Suman
+// ##########################################################################################################################
+// # Since we are not integrating network calls and database calls, we will mock server data with files stored in ./Server dir
+// # Data from local database is mocked with files stored in ./Database dir
+//
+// # Server APIs section contains function declarations 
+//        which will interact with files from mock Server i.e. ./Server dir in this case.
+// # Local Database Queries section contains function declaration 
+//        which will interact with files from mock Local Database i.e. ./Database dir
+// ##########################################################################################################################
+
+
+
+
+
+/* Code */
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
 
 typedef unsigned long long int64;
 
+// ##########################################################################################################################
+
+/* Mock Server APIs */
+
+// Verifies credentials and creates and returns login token for maintaining login session 
+int64 verifyCredentials(char* username, int64 hash);
+// Registers new user by creating a login token for the user
+void createNewToken(char* username, int64 hash);
+// Removes a user by permenantly deleting the login token from server
+void deleteTokenPermenantly(char* username);
+
+// ##########################################################################################################################
+
+/* Mock Local Database Interactor*/
+
+// Saves login token in a file
+void saveToken(int64 token);
+// Reads current user login token and verifies it
+void getAndVerifyToken(int64 token);
+// Deletes current user login token
+void deleteToken();
+
+// ##########################################################################################################################
+
+/*Backend Library*/
+
 // Takes password and a predifined random salt value to generate a hash
 // Will be used to verify login credentials
 int64 generateSaltedHash(char* password, int salt);
-
 // Validates password for its strength and length
 // Returns 0 if password is valid
 // Returns 1 if password is too short or too long
@@ -15,29 +57,20 @@ int64 generateSaltedHash(char* password, int salt);
 // Returns 3 if password is too weak
 int validatePassword(char* password);
 
-// Verifies credentials and creates and returns login token for maintaining login session 
-int64 verifyCredentials(char* username, int64 hash);
+// ##########################################################################################################################
 
-// Saves login token in a file
-void saveToken(int64 token);
-
-// Reads current user login token and verifies it
-void getAndVerifyToken(int64 token);
-
-// Deletes current user login token
-void deleteToken();
+/*Business Logic Layer*/
 
 // Takes username and password and authenticates the user;
 void login(char* username, char* password);
-
 // Logs the user out
 void logout();
-
 // Registers New User
 int registerUser(char* username, char* password);
-
 // Removes User
 void removeUser(char* username);
+
+// ##########################################################################################################################
 
 int main(){
  printf("%llu", generateSaltedHash("zzzzzzAzzzzzzzz", 2));
