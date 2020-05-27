@@ -30,13 +30,18 @@ typedef unsigned long long int64;
 /* Mock Server APIs */
 
 // Verifies credentials and creates and returns login token for maintaining login session 
-int64 verifyCredentials(char* username, int64 hash);
+// Returns 0 and points token pointer to the login token if the credentials are correct
+// Returns 1 if the credentials are incorrect
+int verifyCredentials(char* username, int64 hash, int64* token);
+
 // Registers new user by creating a login token for the user
 // Returns 0 if token is created successfully
 // Returns 1 if username already exists
 int createNewToken(char* username, int64 hash);
 // Removes a user by permenantly deleting the login token from server
 void deleteTokenPermenantly(char* username);
+// Verifies requested token
+void verifyToken(int64 token);
 
 // ##########################################################################################################################
 
@@ -44,8 +49,8 @@ void deleteTokenPermenantly(char* username);
 
 // Saves login token in a file
 void saveToken(int64 token);
-// Reads current user login token and verifies it
-void getAndVerifyToken(int64 token);
+// Reads current user login token
+void getToken();
 // Deletes current user login token
 void deleteToken();
 
@@ -77,10 +82,13 @@ int validateUsername(char* username);
 void login(char* username, char* password);
 // Logs the user out
 void logout();
+// Looks for login token and verifies the user's authentication
+void getCurrentUser();
 // Registers New User
 int registerUser(char* username, char* password);
 // Removes User
 void removeUser(char* username);
+
 
 // ##########################################################################################################################
 
@@ -162,12 +170,11 @@ int validatePassword(char* password){
     return 0;
 }
 
-int64 verifyCredentials(char* username, int64 hash){}
-
 void login(char* username, char* password){
     int salt = generateSalt(username);
     int64 p_hash = generateSaltedHash(password, salt);
-    int64 token = verifyCredentials(username, p_hash);
+    int64* token;
+    int64 token = verifyCredentials(username, p_hash, token);
     //saveToken(token);
 }
 
