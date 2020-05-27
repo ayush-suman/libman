@@ -1,13 +1,17 @@
 /* README */
 // # This project is developed by Ayush Suman
 // ##########################################################################################################################
-// # Since we are not integrating network calls and database calls, we will mock server data with files stored in ./Server dir
-// # Data from local database is mocked with files stored in ./Database dir
+// # Since we are not integrating network calls and database calls 
+//      Server data is mocked with files stored in ./Server dir
+//      Data from local database is mocked with files stored in ./Database dir
 //
 // # Server APIs section contains function declarations 
-//        which will interact with files from mock Server i.e. ./Server dir in this case.
-// # Local Database Queries section contains function declaration 
-//        which will interact with files from mock Local Database i.e. ./Database dir
+//      which will interact with files from mock Server i.e. ./Server dir in this case.
+// # Local Database Interactor section contains function declaration 
+//      which will interact with files from mock Local Database i.e. ./Database dir
+// # Business Logic Layer section contains model functions
+// # Backend Library section contains some backend functions 
+//      that will help us with the software development
 // ##########################################################################################################################
 
 
@@ -26,11 +30,18 @@ typedef unsigned long long int64;
 /* Mock Server APIs */
 
 // Verifies credentials and creates and returns login token for maintaining login session 
-int64 verifyCredentials(char* username, int64 hash);
+// Returns 0 and points token pointer to the login token if the credentials are correct
+// Returns 1 if the credentials are incorrect
+int verifyCredentials(char* username, int64 hash, int64* token);
+
 // Registers new user by creating a login token for the user
-void createNewToken(char* username, int64 hash);
+// Returns 0 if token is created successfully
+// Returns 1 if username already exists
+int createNewToken(char* username, int64 hash);
 // Removes a user by permenantly deleting the login token from server
 void deleteTokenPermenantly(char* username);
+// Verifies requested token
+void verifyToken(int64 token);
 
 // ##########################################################################################################################
 
@@ -38,8 +49,8 @@ void deleteTokenPermenantly(char* username);
 
 // Saves login token in a file
 void saveToken(int64 token);
-// Reads current user login token and verifies it
-void getAndVerifyToken(int64 token);
+// Reads current user login token
+void getToken();
 // Deletes current user login token
 void deleteToken();
 
@@ -47,6 +58,8 @@ void deleteToken();
 
 /*Backend Library*/
 
+// Generates Salt
+int generateSalt(char* username);
 // Takes password and a predifined random salt value to generate a hash
 // Will be used to verify login credentials
 int64 generateSaltedHash(char* password, int salt);
@@ -56,6 +69,10 @@ int64 generateSaltedHash(char* password, int salt);
 // Returns 2 if invalid characters are used in the password
 // Returns 3 if password is too weak
 int validatePassword(char* password);
+// Validates username to contain no whitespaces or invalid characters
+// Returns 0 if username is valid
+// Returns 1 if username contains invalid characters
+int validateUsername(char* username);
 
 // ##########################################################################################################################
 
@@ -65,29 +82,42 @@ int validatePassword(char* password);
 void login(char* username, char* password);
 // Logs the user out
 void logout();
+// Looks for login token and verifies the user's authentication
+void getCurrentUser();
 // Registers New User
 int registerUser(char* username, char* password);
 // Removes User
 void removeUser(char* username);
 
+
 // ##########################################################################################################################
 
 int main(){
- printf("%llu", generateSaltedHash("zzzzzzAzzzzzzzz", 2));
+ //printf("%llu", generateSaltedHash("zzzzzzAzzzzzzzz", generateSalt("heelo")));
  //printf("%d", validatePassword("he1Hlloooo"));
-
+ //printf("%d", generateSalt("hello"));
+ //printf("%d", validateUsername("jkh56Shello"));
 }
 
+int generateSalt(char* username){
+    int ulen= strlen(username);
+    int salt=1;
+    for(int i=0; i<ulen; i++){
+        salt *= ((int) username[i] * (i+1));
+    }
+    salt %=127;
+    return salt;
+}
 
 int64 generateSaltedHash(char* password, int salt){
     int passlen = strlen(password);
     int passint[passlen];
     static const int keyArray[]={23,29,17,13,19,23,37,7,7,31,11,13,5,7,41,5};
-
     for(int i=0; i<passlen; i++){
         passint[i]=(int) password[i];
     }
-    passint[0]+=salt;
+    passint[0]+=(salt%10);
+    passint[passlen-1]+=(salt%10);
     int* x = malloc(sizeof(int64)*passlen);
     for(int i=0; i<passlen; i++){
         x[i]=(int64) keyArray[i];
@@ -95,13 +125,24 @@ int64 generateSaltedHash(char* password, int salt){
             x[i]=(x[i]* (int64) keyArray[i])%(134217757);
         }
     }
-
-    int64 hash=0;
+    int64 hash= (int64) salt;
     for(int i=0; i<passlen; i++){
         hash+=x[i];
     }
     free(x);
     return hash;
+}
+
+int validateUsername(char* username){
+    int ulen= strlen(username);
+    for(int i; i<ulen;i++){
+        if(('0'<=username[i] && username[i]<='9')||('A'<=username[i] && username[i]<='Z')||('a'<=username[i] && username[i]<='z')){
+            continue;
+        }else{
+            return 1;
+        }
+    }
+    return 0;
 }
 
 int validatePassword(char* password){
@@ -112,7 +153,6 @@ int validatePassword(char* password){
     int intcount=0;
     int lowercount=0;
     int uppercount=0;
-
     for(int i;i<passlen;i++){
         if('0'<=password[i] && password[i]<='9'){
             intcount++;
@@ -130,22 +170,23 @@ int validatePassword(char* password){
     return 0;
 }
 
-int64 verifyCredentials(char* username, int64 hash){}
-
 void login(char* username, char* password){
-    int ulen=strlen(username);
-    int plen=strlen(password);
-    int64 p_hash = generateSaltedHash(password, ulen+plen);
-    int64 token = verifyCredentials(username, p_hash);
+    int salt = generateSalt(username);
+    int64 p_hash = generateSaltedHash(password, salt);
+    int64* token;
+    int64 token = verifyCredentials(username, p_hash, token);
     //saveToken(token);
 }
 
 int registerUser(char* username, char* password){
+    int u_status = validateUsername(username);
+    if(u_status!=0){
+        return u_status+3;
+    }
     int p_status = validatePassword(password);
     if(p_status==0){
-        int ulen=strlen(username);
-        int plen=strlen(password);
-        generateSaltedHash(password, ulen+plen);
+        int salt = generateSalt(username);
+        generateSaltedHash(password, salt);
     }else{
         return p_status;
     }
