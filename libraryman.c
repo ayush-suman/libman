@@ -64,7 +64,10 @@ int64 generateSaltedHash(char* password, int salt);
 // Returns 2 if invalid characters are used in the password
 // Returns 3 if password is too weak
 int validatePassword(char* password);
-
+// Validates username to contain no whitespaces or invalid characters
+// Returns 0 if username is valid
+// Returns 1 if username contains invalid characters
+int validateUsername(char* username);
 
 // ##########################################################################################################################
 
@@ -82,10 +85,10 @@ void removeUser(char* username);
 // ##########################################################################################################################
 
 int main(){
- printf("%llu", generateSaltedHash("zzzzzzAzzzzzzzz", generateSalt("heelo")));
+ //printf("%llu", generateSaltedHash("zzzzzzAzzzzzzzz", generateSalt("heelo")));
  //printf("%d", validatePassword("he1Hlloooo"));
  //printf("%d", generateSalt("hello"));
-
+ //printf("%d", validateUsername("jkh56Shello"));
 }
 
 int generateSalt(char* username){
@@ -120,6 +123,18 @@ int64 generateSaltedHash(char* password, int salt){
     }
     free(x);
     return hash;
+}
+
+int validateUsername(char* username){
+    int ulen= strlen(username);
+    for(int i; i<ulen;i++){
+        if(('0'<=username[i] && username[i]<='9')||('A'<=username[i] && username[i]<='Z')||('a'<=username[i] && username[i]<='z')){
+            continue;
+        }else{
+            return 1;
+        }
+    }
+    return 0;
 }
 
 int validatePassword(char* password){
@@ -157,6 +172,10 @@ void login(char* username, char* password){
 }
 
 int registerUser(char* username, char* password){
+    int u_status = validateUsername(username);
+    if(u_status!=0){
+        return u_status+3;
+    }
     int p_status = validatePassword(password);
     if(p_status==0){
         int salt = generateSalt(username);
