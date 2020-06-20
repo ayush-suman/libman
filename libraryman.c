@@ -32,7 +32,7 @@ typedef unsigned long long int64;
 // Verifies credentials and creates and returns login token for maintaining login session 
 // Returns 0 and points token pointer to the login token if the credentials are correct
 // Returns 1 if the credentials are incorrect
-int verifyCredentials(char* username, int64 hash, char* token);
+int verifyCredentials(char* username, int64 hash, char *token);
 
 // Registers new user by creating a login token for the user
 // Returns 0 if token is created successfully
@@ -94,10 +94,14 @@ void removeUser(char* username);
 // ##########################################################################################################################
 
 int main(){
- 	printf("%llu", generateSaltedHash("zzzzzyAzzzzzzzz", generateSalt("heelo")));
+ 	//printf("%llu", generateSaltedHash("zzzzzyAzzzzzzzz", generateSalt("heelo")));
  	//printf("%d", validatePassword("he1Hlloooo"));
  	//printf("%d", generateSalt("hello"));
  	//printf("%d", validateUsername("jkh56Shello"));
+	//char token[50];
+	//int a=verifyCredentials("asdfghjkl", 123223, token);
+	//printf("%d ", a);
+	//printf("%s", token);
 }
 
 // ##########################################################################################################################
@@ -201,7 +205,7 @@ int registerUser(char* username, char* password){
 
 }
 
-int verifyCredentials(char* username, int64 hash, char* token){	
+int verifyCredentials(char* username, int64 hash, char *token){	
 	int ulen =  strlen(username);
 	char ha[30];
 	int hlen = sprintf(ha, "%llu", hash);
@@ -212,46 +216,45 @@ int verifyCredentials(char* username, int64 hash, char* token){
 	int equals=0; 		
 	while(fgets(line, 50, fptr)){
 		if((linenum%3) == 0 ){
-			for(int i=0; i<ulen; i++){
-				if(username[i]==line[i]){
-					equals=1;			
-				}else{
-					equals=0;
-					break;
+			if(ulen==(strlen(line)-1)){
+				for(int i=0; i<ulen; i++){
+					if(username[i]==line[i]){
+						equals=1;			
+					}else{
+						equals=0;
+						break;
+					}
 				}
 			}
 		}
 		if(equals==1){
-			if((linenum%3)!=1){
-			continue;
-			}
+			fgets(line, 50, fptr);
 			int creds=0;
-			for(int i=0; i<hlen; i++){
-				if(ha[i]==line[i]){
-					creds=1;
-				}else{
-					creds=0;
-					break;
-				}
-			}
-			if(creds=0){
-				return 1;
-			}else{
-				if((linenum%3)!=2){
-					continue;
-				}
-				char* tok= (char*) malloc(50 * sizeof(char));
-				for(int i=0; i<50; i++){
-					if(line[i]=='\n'){
-						tok[i]='\0';
+			if(hlen== (strlen(line)-1)){
+				for(int i=0; i<hlen; i++){
+					if(ha[i]==line[i]){
+						creds=1;
+					}else{
+						creds=0;
 						break;
 					}
-					tok[i]= line[i];
 				}
-				token = tok;
+			}
+			if(creds==0){
+				return 1;
+			}else{
+				fgets(line, 50, fptr);
+				for(int i=0; i<50; i++){
+					if(line[i]=='\n'){
+						token[i] ='\0';
+						break;
+					}
+					token[i] = line[i];
+				}
 				return 0;
 			}
 		}
+		linenum++;
 	}
 	return 1;
 
