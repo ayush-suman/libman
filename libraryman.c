@@ -32,11 +32,13 @@ typedef unsigned long long int64;
 // Verifies credentials and creates and returns login token for maintaining login session 
 // Returns 0 and points token pointer to the login token if the credentials are correct
 // Returns 1 if the credentials are incorrect
+// Returns -1 if the file does not open
 int verifyCredentials(char* username, int64 hash, char *token);
 
 // Registers new user by creating a login token for the user
 // Returns 0 if token is created successfully
 // Returns 1 if username already exists
+// Returns -1 if the file does not open
 int createNewToken(char* username, int64 hash);
 // Removes a user by permenantly deleting the login token from server
 void deleteTokenPermenantly(char* username);
@@ -48,7 +50,7 @@ void verifyToken(int64 token);
 /* Mock Local Database Interactor*/
 
 // Saves login token in a file
-void saveToken(int64 token);
+void saveToken(char* token);
 // Reads current user login token
 void getToken();
 // Deletes current user login token
@@ -102,6 +104,8 @@ int main(){
 	//int a=verifyCredentials("asdfghjkl", 123223, token);
 	//printf("%d ", a);
 	//printf("%s", token);
+	int ret = createNewToken("aush", 1525);
+	printf("%d", ret);
 }
 
 // ##########################################################################################################################
@@ -185,36 +189,43 @@ int validatePassword(char* password){
 void login(char* username, char* password){
     	int salt = generateSalt(username);
     	int64 p_hash = generateSaltedHash(password, salt);
-    	int64* token;
-    	//int ret = verifyCredentials(username, p_hash, token);
+    	char token[50];
+    	int ret = verifyCredentials(username, p_hash, token);
     	//saveToken(token);
 }
+
+int saveToken(char* token);
 
 int registerUser(char* username, char* password){
     	int u_status = validateUsername(username);
     	if(u_status!=0){
-        	return u_status+3;
+        	return u_status+4;
     	}
     	int p_status = validatePassword(password);
-    	if(p_status==0){
-        	int salt = generateSalt(username);
-        	generateSaltedHash(password, salt);
-    	}else{
-		return p_status;
+    	if(p_status!=0){
+        	return p_status+1;
 	}
-
+	int salt = generateSalt(username);
+        int64 hash = generateSaltedHash(password, salt);
+	int ret = createNewToken(username, hash);
+	return ret;
 }
 
-int verifyCredentials(char* username, int64 hash, char *token){	
-	int ulen =  strlen(username);
+int createNewToken(char* username, int64 hash){
+	//generateToken;
+	int ulen = strlen(username);
 	char ha[30];
 	int hlen = sprintf(ha, "%llu", hash);
-	FILE* fptr;
-	fptr = fopen("Server/tokenStore.txt", "r");
+	
+	FILE* fp;
+	fp = fopen("Server/tokenStore.txt", "r");
+	if(fp==NULL){
+		return -1;
+	}
 	char line[50];
 	int linenum=0;
 	int equals=0; 		
-	while(fgets(line, 50, fptr)){
+	while(fgets(line, 50, fp)){
 		if((linenum%3) == 0 ){
 			if(ulen==(strlen(line)-1)){
 				for(int i=0; i<ulen; i++){
@@ -228,7 +239,47 @@ int verifyCredentials(char* username, int64 hash, char *token){
 			}
 		}
 		if(equals==1){
-			fgets(line, 50, fptr);
+			return 1;
+		}
+		linenum++;
+	}
+	fp = freopen("Server/tokenStore.txt", "a", fp);
+	fputs(username, fp);
+	fputs("\n", fp);
+	fputs(ha, fp);
+	fputs("\n", fp);
+	fputs("Token", fp);
+	fputs("\n", fp);
+	fclose(fp);
+}
+
+int verifyCredentials(char* username, int64 hash, char *token){	
+	int ulen =  strlen(username);
+	char ha[30];
+	int hlen = sprintf(ha, "%llu", hash);
+	FILE* fp;
+	fp = fopen("Server/tokenStore.txt", "r");
+	if(fp == NULL){
+		return -1;
+	}
+	char line[50];
+	int linenum=0;
+	int equals=0; 		
+	while(fgets(line, 50, fp)){
+		if((linenum%3) == 0 ){
+			if(ulen==(strlen(line)-1)){
+				for(int i=0; i<ulen; i++){
+					if(username[i]==line[i]){
+						equals=1;			
+					}else{
+						equals=0;
+						break;
+					}
+				}
+			}
+		}
+		if(equals==1){
+			fgets(line, 50, fp);
 			int creds=0;
 			if(hlen== (strlen(line)-1)){
 				for(int i=0; i<hlen; i++){
@@ -241,9 +292,10 @@ int verifyCredentials(char* username, int64 hash, char *token){
 				}
 			}
 			if(creds==0){
+				fclose(fp);
 				return 1;
 			}else{
-				fgets(line, 50, fptr);
+				fgets(line, 50, fp);
 				for(int i=0; i<50; i++){
 					if(line[i]=='\n'){
 						token[i] ='\0';
@@ -251,11 +303,13 @@ int verifyCredentials(char* username, int64 hash, char *token){
 					}
 					token[i] = line[i];
 				}
+				fclose(fp);
 				return 0;
 			}
 		}
 		linenum++;
 	}
+	fclose(fp);
 	return 1;
 
 }
