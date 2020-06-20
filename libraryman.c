@@ -50,11 +50,17 @@ void verifyToken(int64 token);
 /* Mock Local Database Interactor*/
 
 // Saves login token in a file
-void saveToken(char* token);
+// Returns -1 if the file does not open
+// Returns 0 if the token is successfully stored
+int saveToken(char* token);
 // Reads current user login token
-void getToken();
+// Returns -1 if the file does not open
+// Returns 0 if token is successfully read and put into token argument
+int getToken(char* token);
 // Deletes current user login token
-void deleteToken();
+// Returns -1 if the file does not open
+// Returns 0 if the token is successfully deleted
+int deleteToken();
 
 // ##########################################################################################################################
 
@@ -82,12 +88,24 @@ int validateUsername(char* username);
 /*Business Logic Layer*/
 
 // Takes username and password and authenticates the user;
-void login(char* username, char* password);
+// Returns -1 if something went wrong
+// Returns 0 if the user is successfully logged in
+// Returns 1 if the username or the password was incorrect
+// Returns
+int login(char* username, char* password);
 // Logs the user out
 void logout();
 // Looks for login token and verifies the user's authentication
 void getCurrentUser();
 // Registers New User
+// Returns -1 if something went wrong
+// Returns 0 if the user is registerd successfully
+// Returns 1 if the user already exists
+// Returns 2 if the password size is not correct
+// Returns 3 if the password contains invalid characters
+// Returns 4 if the password is too weak
+// Returns 5 if the username contains invaiid characters
+// Returns 6 if the username is longer than 16 characters
 int registerUser(char* username, char* password);
 // Removes User
 void removeUser(char* username);
@@ -104,7 +122,10 @@ int main(){
 	//int a=verifyCredentials("asdfghjkl", 123223, token);
 	//printf("%d ", a);
 	//printf("%s", token);
-	int ret = createNewToken("aush", 1525);
+	//int ret = createNewToken("aush", 1525);
+	//printf("%d", ret);
+	//saveToken("Ty");
+	int ret = login("ayush", "123456");
 	printf("%d", ret);
 }
 
@@ -186,15 +207,30 @@ int validatePassword(char* password){
     	return 0;
 }
 
-void login(char* username, char* password){
+int login(char* username, char* password){
     	int salt = generateSalt(username);
     	int64 p_hash = generateSaltedHash(password, salt);
     	char token[50];
+	printf("%llu\n", p_hash);
     	int ret = verifyCredentials(username, p_hash, token);
-    	//saveToken(token);
+	if(ret != 0){
+		return ret;
+	}
+	printf("%s\n", token);
+    	return saveToken(token);
+	
 }
 
-int saveToken(char* token);
+int saveToken(char* token){
+	FILE* fp;
+	fp = fopen("Local/token.txt", "w");
+	if(fp ==NULL){
+		return -1;
+	}
+	fputs(token, fp);
+	fclose(fp);
+	return 0;
+}
 
 int registerUser(char* username, char* password){
     	int u_status = validateUsername(username);
@@ -212,16 +248,16 @@ int registerUser(char* username, char* password){
 }
 
 int createNewToken(char* username, int64 hash){
-	//generateToken;
 	int ulen = strlen(username);
 	char ha[30];
 	int hlen = sprintf(ha, "%llu", hash);
 	
 	FILE* fp;
-	fp = fopen("Server/tokenStore.txt", "r");
+	fp = fopen("./Server/tokenStore.txt", "r");
 	if(fp==NULL){
 		return -1;
 	}
+
 	char line[50];
 	int linenum=0;
 	int equals=0; 		
@@ -248,6 +284,7 @@ int createNewToken(char* username, int64 hash){
 	fputs("\n", fp);
 	fputs(ha, fp);
 	fputs("\n", fp);
+	//generateToken;
 	fputs("Token", fp);
 	fputs("\n", fp);
 	fclose(fp);
