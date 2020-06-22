@@ -143,7 +143,7 @@ int main(){
 	printf("WELCOME TO E-LIBRARY PORTAL\n\n");
 	printf("If you are an old user, Press 1 to Log In\n");
 	printf("If you are a new user, Press 2 to Register\n\n");
-	int r=fgetc(stdin)-'0';
+	int r = fgetc(stdin)-'0';
 	if(r==1){
 		loginUI();
 	} else if(r==2){
