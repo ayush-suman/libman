@@ -1,0 +1,7 @@
+issueNo
+bookTitle
+Author
+quantity
+issued
+
+

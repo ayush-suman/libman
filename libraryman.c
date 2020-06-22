@@ -22,6 +22,7 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
+#include<stdarg.h>
 
 typedef unsigned long long int64;
 
@@ -88,6 +89,8 @@ int validateUsername(char* username);
 // Generates unique token for a username
 char* generateToken(char* username, int64 hash);
 
+void loadNewScreen(void (*fun)());
+
 // ##########################################################################################################################
 
 /*Business Logic Layer*/
@@ -120,8 +123,10 @@ void removeUser(char* username);
 
 /*UI Layer*/
 
+void welcomeScreen();
 void loginUI();
 void registerUI();
+void homeScreen(char* username);
 
 // ##########################################################################################################################
 
@@ -142,26 +147,43 @@ int main(){
 	//char* token = generateToken("ayush", 15243);
 	//int ret=registerUser("ayushsumanyo", "Password123");
 	//login("ayushsumanyo", "Password123");
-	//printf("\e[1;1H\e[2J");
-	//printf("WELCOME TO E-LIBRARY PORTAL\n\n");
-	//print("Loading...");
-
-	//printf("If you are an old user, Press 1 to Log In\n");
-	//printf("If you are a new user, Press 2 to Register\n\n");
-	//int r = fgetc(stdin)-'0';
-	//if(r==1){
-	//	loginUI();
-	//} else if(r==2){
-	//	registerUI();
-	//} else {
-	//	printf("NOT A VALID ENTRY!");
-	//}
-	char* username = (char*) malloc(50 * sizeof(char));
-	int ret = verifyToken("lJf9SpfllcpnqyAKqy", username);
-	printf("%d\n%s", ret, username);
+	//welcomeScreen();
+	//char* username = (char*) malloc(50 * sizeof(char));
+	//int ret = verifyToken("lJf9SpfllcpnqyAKqy", username);
+	//printf("%d\n%s", ret, username);
+	welcomeScreen();
 }
 
 // ##########################################################################################################################
+
+void welcomeScreen(){
+	printf("\e[1;1H\e[2J");
+	printf("WELCOME TO E-LIBRARY PORTAL\n\n");
+	printf("Loading...\n");
+	char* username = getCurrentUser();
+	if(username == "\0"){
+		printf("\e[1;1H\e[2J");
+		printf("WELCOME TO E-LIBRARY PORTAL\n\n");
+		printf("If you are an old user, Press 1 to Log In\n");
+		printf("If you are a new user, Press 2 to Register\n\n");
+		int r = fgetc(stdin)-'0';
+		if(r==1){
+			loginUI();
+		} else if(r==2){
+			registerUI();
+		} else {
+			printf("NOT A VALID ENTRY!");
+		}
+	}else{
+		printf("\e[1;1H\e[2J");
+		printf("Welcome %s\n", username);
+		homeScreen(username);
+	}
+}
+void homeScreen(char* username){
+
+}
+
 
 void loginUI(){
 	char username[500];
@@ -175,7 +197,9 @@ void loginUI(){
 	password[50]='\0';
 	int ret = login(username, password);
 	if(ret==0){
-		printf("Logged In");
+		printf("Logged In\n");
+		printf("\e[1;1H\e[2J");
+		homeScreen(username);
 	}else{
 		printf("Incorrect username or password");
 	}
@@ -187,18 +211,21 @@ void registerUI(){
 
 char* getCurrentUser(){
 	char* token = (char*) malloc(50*sizeof(char));
-	getToken(token);
-	if(token==NULL){
-		free(token);
-		return NULL;
+	int re = getToken(token);
+	if(re == 1){
+		return "\0";
 	}
 	char* username = (char*) malloc(50*sizeof(char));
 	int ret = verifyToken(token, username);
 	if(ret==0){
 		return username;
 	} else {
-		return NULL;
+		return "\0";
 	}
+}
+
+void loadNewScreen(void (*fun)()){
+
 }
 
 int verifyToken(char* token, char* username){
@@ -248,6 +275,10 @@ int getToken(char* token){
 		return -1;
 	}
 	fgets(token, 50, fp);
+	if(token[0] == '\0'){
+		free(token);
+		return 1;
+	}
 	fclose(fp);
 	return 0;
 }
