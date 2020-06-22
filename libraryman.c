@@ -131,7 +131,7 @@ int main(){
 	//printf("%d", ret);
 	//char* token = generateToken("ayush", 15243);
 	int ret=registerUser("ayushsumanyo", "Password123");
-	printf("%d", ret);
+	login("ayushsumanyo", "Password123");
 }
 
 // ##########################################################################################################################
@@ -177,7 +177,7 @@ int validateUsername(char* username){
 	if(ulen>16){
 		return 2;
 	}
-    	for(int i; i<ulen;i++){
+    	for(int i=0; i<ulen;i++){
         	if(('0'<=username[i] && username[i]<='9')||('A'<=username[i] && username[i]<='Z')||('a'<=username[i] && username[i]<='z')){
             		continue;
         	}else{
@@ -195,18 +195,19 @@ int validatePassword(char* password){
     	int intcount=0;
     	int lowercount=0;
     	int uppercount=0;
-    	for(int i;i<passlen;i++){
-        	if('0'<=password[i] && password[i]<='9'){
+    	for(int i=0;i<passlen;i++){
+        	if('0'<=*(password+i) && *(password+i)<='9'){
             		intcount++;
-        	} else if('A'<=password[i] && password[i]<='Z'){
+        	} else if('A'<= *(password+i) && *(password+i)<='Z'){
             		uppercount++;
-        	} else if('a'<=password[i] && password[i]<='z'){
+        	} else if('a'<= *(password+i) && *(password+i)<='z'){
             		lowercount++;
         	} else {
             		return 2;
         	}
     	}
     	if(intcount==0 || lowercount==0 || uppercount==0){
+		printf("%d %d %d\n", intcount, lowercount, uppercount);
         	return 3;
     	}
     	return 0;
@@ -216,12 +217,10 @@ int login(char* username, char* password){
     	int salt = generateSalt(username);
     	int64 p_hash = generateSaltedHash(password, salt);
     	char token[50];
-	printf("%llu\n", p_hash);
     	int ret = verifyCredentials(username, p_hash, token);
 	if(ret != 0){
 		return ret;
 	}
-	printf("%s\n", token);
     	return saveToken(token);
 	
 }
@@ -244,6 +243,7 @@ int registerUser(char* username, char* password){
     	}
     	int p_status = validatePassword(password);
     	if(p_status!=0){
+		printf("Password not validated");
         	return p_status+1;
 	}
 	int salt = generateSalt(username);
@@ -255,7 +255,7 @@ int registerUser(char* username, char* password){
 char* generateToken(char* username, int64 hash){
 	int ulen = strlen(username);
 	char* token;
-	token = (char*) malloc(18*sizeof(char));
+	token = (char*) malloc(19*sizeof(char));
 	int c;
 	int s=0;
 	int h = hash%13;
@@ -299,6 +299,7 @@ char* generateToken(char* username, int64 hash){
 		}
 
 	}
+	token[18]='\0';
 	return token;
 
 }
@@ -313,7 +314,6 @@ int createNewToken(char* username, int64 hash){
 	if(fp==NULL){
 		return -1;
 	}
-
 	char line[50];
 	int linenum=0;
 	int equals=0; 		
@@ -344,7 +344,7 @@ int createNewToken(char* username, int64 hash){
 	fputs(token, fp);
 	fputs("\n", fp);
 	fclose(fp);
-	//free(token);
+	free(token);
 }
 
 int verifyCredentials(char* username, int64 hash, char *token){	
