@@ -112,6 +112,12 @@ int registerUser(char* username, char* password);
 // Removes User
 void removeUser(char* username);
 
+// ##########################################################################################################################
+
+/*UI Layer*/
+
+void loginUI();
+void registerUI();
 
 // ##########################################################################################################################
 
@@ -130,13 +136,46 @@ int main(){
 	//int ret = login("ayush", "123456");
 	//printf("%d", ret);
 	//char* token = generateToken("ayush", 15243);
-	int ret=registerUser("ayushsumanyo", "Password123");
-	login("ayushsumanyo", "Password123");
+	//int ret=registerUser("ayushsumanyo", "Password123");
+	//login("ayushsumanyo", "Password123");
+	//printf("\e[1;1H\e[2J");
+	system("clear");
+	printf("WELCOME TO E-LIBRARY PORTAL\n\n");
+	printf("If you are an old user, Press 1 to Log In\n");
+	printf("If you are a new user, Press 2 to Register\n\n");
+	int r=fgetc(stdin)-'0';
+	if(r==1){
+		loginUI();
+	} else if(r==2){
+		registerUI();
+	} else {
+		printf("NOT A VALID ENTRY!");
+	}
 }
 
 // ##########################################################################################################################
 
+void loginUI(){
+	char username[500];
+	char password[500];
+	system("clear");
+	printf("Enter Username:\n");
+	scanf("%s", username);
+	printf("Enter Password:\n");
+	scanf("%s", password);
+	username[50]='\0';
+	password[50]='\0';
+	int ret = login(username, password);
+	if(ret==0){
+		printf("Logged In");
+	}else{
+		printf("Incorrect username or password");
+	}
+}
 
+void registerUI(){
+	printf("Registering...");
+}
 
 int generateSalt(char* username){
     	int ulen= strlen(username);
@@ -306,7 +345,7 @@ char* generateToken(char* username, int64 hash){
 
 int createNewToken(char* username, int64 hash){
 	int ulen = strlen(username);
-	char ha[30];
+	char ha[50];
 	int hlen = sprintf(ha, "%llu", hash);
 	
 	FILE* fp;
@@ -347,9 +386,9 @@ int createNewToken(char* username, int64 hash){
 	free(token);
 }
 
-int verifyCredentials(char* username, int64 hash, char *token){	
+int verifyCredentials(char* username, int64 hash, char* token){	
 	int ulen =  strlen(username);
-	char ha[30];
+	char ha[50];
 	int hlen = sprintf(ha, "%llu", hash);
 	FILE* fp;
 	fp = fopen("Server/tokenStore.txt", "r");
