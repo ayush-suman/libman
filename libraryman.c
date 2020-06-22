@@ -25,6 +25,8 @@
 #include<stdarg.h>
 
 typedef unsigned long long int64;
+static void (*SCREEN)();
+static char* USERNAME;
 
 // ##########################################################################################################################
 
@@ -88,8 +90,8 @@ int validatePassword(char* password);
 int validateUsername(char* username);
 // Generates unique token for a username
 char* generateToken(char* username, int64 hash);
-
-void loadNewScreen(void (*fun)());
+// Clears the previous screen and loads new screen
+void loadScreen(void (*screen)());
 
 // ##########################################################################################################################
 
@@ -123,10 +125,12 @@ void removeUser(char* username);
 
 /*UI Layer*/
 
+void newScreen(void (*screen)());
+void splashScreen();
 void welcomeScreen();
 void loginUI();
 void registerUI();
-void homeScreen(char* username);
+void homeScreen();
 
 // ##########################################################################################################################
 
@@ -151,37 +155,49 @@ int main(){
 	//char* username = (char*) malloc(50 * sizeof(char));
 	//int ret = verifyToken("lJf9SpfllcpnqyAKqy", username);
 	//printf("%d\n%s", ret, username);
-	welcomeScreen();
+	newScreen(splashScreen);
+	for(;;){
+		loadScreen(SCREEN);
+	}
+	//loadScreen(splashScreen);
 }
 
 // ##########################################################################################################################
 
-void welcomeScreen(){
-	printf("\e[1;1H\e[2J");
+void newScreen(void (*screen)()){
+	SCREEN = screen;
+}
+
+void splashScreen(){
 	printf("WELCOME TO E-LIBRARY PORTAL\n\n");
 	printf("Loading...\n");
-	char* username = getCurrentUser();
-	if(username == "\0"){
-		printf("\e[1;1H\e[2J");
-		printf("WELCOME TO E-LIBRARY PORTAL\n\n");
-		printf("If you are an old user, Press 1 to Log In\n");
-		printf("If you are a new user, Press 2 to Register\n\n");
-		int r = fgetc(stdin)-'0';
-		if(r==1){
-			loginUI();
-		} else if(r==2){
-			registerUI();
-		} else {
-			printf("NOT A VALID ENTRY!");
-		}
+	USERNAME = getCurrentUser();
+	if(USERNAME == "\0"){
+		newScreen(welcomeScreen);
 	}else{
-		printf("\e[1;1H\e[2J");
-		printf("Welcome %s\n", username);
-		homeScreen(username);
+		newScreen(homeScreen);
 	}
 }
-void homeScreen(char* username){
 
+
+void welcomeScreen(){
+	printf("WELCOME TO E-LIBRARY PORTAL\n\n");
+option:	printf("If you are an old user, Press 1 to Log In\n");
+	printf("If you are a new user, Press 2 to Register\n\n");
+	int r = fgetc(stdin)-'0';
+	if(r==1){
+		newScreen(loginUI);
+	} else if(r==2){
+		newScreen(registerUI);
+	} else {
+		printf("NOT A VALID ENTRY!\nEnter Again:\n");
+		goto option;
+	}
+}
+
+void homeScreen(){
+	printf("HOMESCREEN");
+	exit(0);
 }
 
 
@@ -199,14 +215,25 @@ void loginUI(){
 	if(ret==0){
 		printf("Logged In\n");
 		printf("\e[1;1H\e[2J");
-		homeScreen(username);
+		newScreen(homeScreen);
 	}else{
 		printf("Incorrect username or password");
+loginOption:	printf("Press 1 to try again\n Press 2 to go back");
+		int r = fgetc(stdin)-'0';
+		if(r==1){
+			return;	
+		}else if(r==2){
+			newScreen(welcomeScreen);
+		}else{
+			printf("NOT A VALID ENTRY!\nEnter Again:\n");
+			goto loginOption;
+		}
 	}
 }
 
 void registerUI(){
 	printf("Registering...");
+	exit(0);
 }
 
 char* getCurrentUser(){
@@ -224,8 +251,9 @@ char* getCurrentUser(){
 	}
 }
 
-void loadNewScreen(void (*fun)()){
-
+void loadScreen(void (*screen)()){
+	printf("\e[1;1H\e[2J");
+	screen();
 }
 
 int verifyToken(char* token, char* username){
