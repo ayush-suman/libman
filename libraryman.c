@@ -196,7 +196,7 @@ option:	printf("If you are an old user, Press 1 to Log In\n");
 }
 
 void homeScreen(){
-	printf("HOMESCREEN");
+	printf("HOMESCREEN\n");
 	exit(0);
 }
 
@@ -217,9 +217,10 @@ void loginUI(){
 		printf("\e[1;1H\e[2J");
 		newScreen(homeScreen);
 	}else{
-		printf("Incorrect username or password");
-loginOption:	printf("Press 1 to try again\n Press 2 to go back");
-		int r = fgetc(stdin)-'0';
+		printf("Incorrect username or password\n");
+loginOption:	printf("Press 1 to try again\nPress 2 to go back\n");
+		int r=0;
+		scanf("%d", &r);
 		if(r==1){
 			return;	
 		}else if(r==2){
@@ -232,7 +233,7 @@ loginOption:	printf("Press 1 to try again\n Press 2 to go back");
 }
 
 void registerUI(){
-	printf("Registering...");
+	printf("Registering...\n");
 	exit(0);
 }
 
