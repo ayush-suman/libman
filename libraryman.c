@@ -42,8 +42,11 @@ int verifyCredentials(char* username, int64 hash, char *token);
 int createNewToken(char* username, int64 hash);
 // Removes a user by permenantly deleting the login token from server
 void deleteTokenPermenantly(char* username);
-// Verifies requested token
-void verifyToken(int64 token);
+// Verifies requested token and puts username in the username argument
+// Returns 0 if the token is verified
+// Returns 1 if the token is not verified
+// Returns -1 if file does not open
+int verifyToken(char* token, char* username);
 
 // ##########################################################################################################################
 
@@ -97,8 +100,9 @@ char* generateToken(char* username, int64 hash);
 int login(char* username, char* password);
 // Logs the user out
 void logout();
-// Looks for login token and verifies the user's authentication
-void getCurrentUser();
+// Looks for login token and verifies it
+// Returns username if the token is verified
+char* getCurrentUser();
 // Registers New User
 // Returns -1 if something went wrong
 // Returns 0 if the user is registerd successfully
@@ -139,18 +143,22 @@ int main(){
 	//int ret=registerUser("ayushsumanyo", "Password123");
 	//login("ayushsumanyo", "Password123");
 	//printf("\e[1;1H\e[2J");
-	system("clear");
-	printf("WELCOME TO E-LIBRARY PORTAL\n\n");
-	printf("If you are an old user, Press 1 to Log In\n");
-	printf("If you are a new user, Press 2 to Register\n\n");
-	int r = fgetc(stdin)-'0';
-	if(r==1){
-		loginUI();
-	} else if(r==2){
-		registerUI();
-	} else {
-		printf("NOT A VALID ENTRY!");
-	}
+	//printf("WELCOME TO E-LIBRARY PORTAL\n\n");
+	//print("Loading...");
+
+	//printf("If you are an old user, Press 1 to Log In\n");
+	//printf("If you are a new user, Press 2 to Register\n\n");
+	//int r = fgetc(stdin)-'0';
+	//if(r==1){
+	//	loginUI();
+	//} else if(r==2){
+	//	registerUI();
+	//} else {
+	//	printf("NOT A VALID ENTRY!");
+	//}
+	char* username = (char*) malloc(50 * sizeof(char));
+	int ret = verifyToken("lJf9SpfllcpnqyAKqy", username);
+	printf("%d\n%s", ret, username);
 }
 
 // ##########################################################################################################################
@@ -158,7 +166,7 @@ int main(){
 void loginUI(){
 	char username[500];
 	char password[500];
-	system("clear");
+	printf("\e[1;1H\e[2J");
 	printf("Enter Username:\n");
 	scanf("%s", username);
 	printf("Enter Password:\n");
@@ -175,6 +183,73 @@ void loginUI(){
 
 void registerUI(){
 	printf("Registering...");
+}
+
+char* getCurrentUser(){
+	char* token = (char*) malloc(50*sizeof(char));
+	getToken(token);
+	if(token==NULL){
+		free(token);
+		return NULL;
+	}
+	char* username = (char*) malloc(50*sizeof(char));
+	int ret = verifyToken(token, username);
+	if(ret==0){
+		return username;
+	} else {
+		return NULL;
+	}
+}
+
+int verifyToken(char* token, char* username){
+	FILE* fp;
+	char gToken[50];
+	int tlen = strlen(token);
+	fp = fopen("Server/tokenStore.txt", "r");
+	if(fp ==NULL){
+		free(token);
+		return -1;
+	}
+	int equals=0;
+	int linenum=0;
+	while(fgets(gToken, 50, fp)){
+		if((linenum%3)==2){
+			for(int i=0; i<tlen; i++){
+				if(gToken[i] == token[i]){
+					equals=1;	
+				}else{
+					equals=0;
+					break;
+				}
+			}
+			if(equals==1){
+				rewind(fp);
+				linenum++;
+				linenum/=3;
+				for(int m=0; m<=linenum;m+=3){
+					fgets(username, 50, fp);
+				}
+				username[strlen(username)-1]='\0';
+				free(token);
+				return 0;
+			}
+		}
+		linenum++;
+	}
+	free(token);
+	return 1;
+
+}
+
+int getToken(char* token){
+	FILE* fp;
+	fp = fopen("Local/token.txt", "r");
+	if(fp==NULL){
+		return -1;
+	}
+	fgets(token, 50, fp);
+	fclose(fp);
+	return 0;
 }
 
 int generateSalt(char* username){
