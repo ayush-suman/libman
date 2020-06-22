@@ -82,6 +82,8 @@ int validatePassword(char* password);
 // Returns 1 if username contains invalid characters
 // Returns 2 if username is longer than 16 characters
 int validateUsername(char* username);
+// Generates unique token for a username
+char* generateToken(char* username, int64 hash);
 
 // ##########################################################################################################################
 
@@ -125,7 +127,10 @@ int main(){
 	//int ret = createNewToken("aush", 1525);
 	//printf("%d", ret);
 	//saveToken("Ty");
-	int ret = login("ayush", "123456");
+	//int ret = login("ayush", "123456");
+	//printf("%d", ret);
+	//char* token = generateToken("ayush", 15243);
+	int ret=registerUser("ayushsumanyo", "Password123");
 	printf("%d", ret);
 }
 
@@ -247,6 +252,57 @@ int registerUser(char* username, char* password){
 	return ret;
 }
 
+char* generateToken(char* username, int64 hash){
+	int ulen = strlen(username);
+	char* token;
+	token = (char*) malloc(18*sizeof(char));
+	int c;
+	int s=0;
+	int h = hash%13;
+	for(int i = 0; i<ulen; i++){
+		c= (int) username[i];
+		s+= (int) username[i];
+		c%=62;
+		for(int j=0; j<i+h; j++){
+			c*=c;
+			c%=62;
+		}
+		if(0<=c && c<10){
+			token[i] = c+'0';
+		}
+		if(10<=c && c<36){
+			token[i] = c-10+'A';
+		}
+		if(36<=c && c<62){
+			token[i] = c-36+'a';
+		}
+	}
+	for(int i=ulen;i<18;i++){
+		h = hash%62;
+		h%=62;
+		for(int j = 0; j<i;j++){
+			h*=h;
+			h%=62;
+			s*=s;
+			s%=62;
+		}
+		h+=s;
+		h%=62;
+		if(0<=h && h<10){
+			token[i] = h+'0';
+		}
+		if(10<=h && h<36){
+			token[i] = h-10+'A';
+		}
+		if(36<=h && h<62){
+			token[i] = h-36+'a';
+		}
+
+	}
+	return token;
+
+}
+
 int createNewToken(char* username, int64 hash){
 	int ulen = strlen(username);
 	char ha[30];
@@ -284,10 +340,11 @@ int createNewToken(char* username, int64 hash){
 	fputs("\n", fp);
 	fputs(ha, fp);
 	fputs("\n", fp);
-	//generateToken;
-	fputs("Token", fp);
+	char* token=generateToken(username, hash);
+	fputs(token, fp);
 	fputs("\n", fp);
 	fclose(fp);
+	//free(token);
 }
 
 int verifyCredentials(char* username, int64 hash, char *token){	
