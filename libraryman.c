@@ -28,9 +28,9 @@ static void (*SCREEN)();
 static char* USERNAME;
 
 struct bookClass {
-	char* id;
-	char* bookTitle;
-	char* author;
+	char id[20];
+	char bookTitle[20];
+	char author[20];
 	int quantity;
 	int issued;
 };
@@ -42,9 +42,9 @@ struct bookList {
 
 
 struct bookInfo {
-	char* id;
-	char* bookTitle;
-	char* author;
+	char id[20];
+	char bookTitle[20];
+	char author[20];
 };
 
 
@@ -79,7 +79,7 @@ int verifyToken(char* token, char* username);
 // Public API for searching through the book store
 int searchBooks(char* book, struct bookList list);
 // Public API for getting book info of the requested Issue No
-int getBookByID(char* id, struct bookClass book);
+int getBookByID(char* id, struct bookClass *book);
 // API for getting wish list info
 int getWishListInfo(char* token, struct bookInfoList books);
 // API for returning the info of the book issued
@@ -171,7 +171,7 @@ void registerUI();
 void homeScreen();
 void issuedBookUI();
 void bookStoreUI();
-void 
+ 
 // ##########################################################################################################################
 
 int main(){
@@ -200,6 +200,9 @@ int main(){
 		loadScreen(SCREEN);
 	}
 	//loadScreen(splashScreen);
+	//struct bookClass *book = (struct bookClass*) malloc(sizeof(struct bookClass));
+	//int ret = getBookByID("issueno", book);
+	//printf("%d\n%s", ret, book->bookTitle);
 }
 
 // ##########################################################################################################################
@@ -685,4 +688,37 @@ int verifyCredentials(char* username, int64 hash, char* token){
 
 }
 
+int getBookByID(char* id, struct bookClass *book){
+	FILE* fp;
+	fp = fopen("Server/bookStore.txt", "r");
+	if(fp==NULL){
+		return -1;
+	}
+	char line[20];
+	int linenum=0;
+	while(fgets(line, 20, fp)){
+		if((linenum%5)==0){
+			line[strlen(line)-1]='\0';
+			int cmp = strcmp(id, line);
+			if(cmp==0){
+				strcpy(book->id, line);	
+				fgets(line, 20, fp);
+				line[strlen(line)-1]='\0';
+				strcpy(book->bookTitle, line);	
+				fgets(line, 20, fp);
+				line[strlen(line)-1]='\0';
+				strcpy(book->author, line);	
+				fgets(line, 20, fp);
+				line[strlen(line)-1]='\0';
+				book->quantity = atoi(line);
+				fgets(line, 20, fp);
+				line[strlen(line)-1]='\0';
+				book->issued = atoi(line);
+				return 0;
+			}
+		}
+		linenum++;
+	}
+	return 1;
 
+}

@@ -3,5 +3,3 @@ bookTitle
 Author
 quantity
 issued
-
-
