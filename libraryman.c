@@ -24,6 +24,35 @@
 #include<string.h>
 
 typedef unsigned long long int64;
+static void (*SCREEN)();
+static char* USERNAME;
+
+struct bookClass {
+	char* id;
+	char* bookTitle;
+	char* author;
+	int quantity;
+	int issued;
+};
+
+struct bookList {
+	struct bookClass book;
+	struct bookList* next;
+};
+
+
+struct bookInfo {
+	char* id;
+	char* bookTitle;
+	char* author;
+};
+
+
+struct bookInfoList {
+	struct bookInfo book;
+	struct bookInfoList* next;
+};
+
 
 // ##########################################################################################################################
 
@@ -47,7 +76,14 @@ void deleteTokenPermenantly(char* username);
 // Returns 1 if the token is not verified
 // Returns -1 if file does not open
 int verifyToken(char* token, char* username);
-
+// Public API for searching through the book store
+int searchBooks(char* book, struct bookList list);
+// Public API for getting book info of the requested Issue No
+int getBookByID(char* id, struct bookClass book);
+// API for getting wish list info
+int getWishListInfo(char* token, struct bookInfoList books);
+// API for returning the info of the book issued
+int getIssuedBookInfo(char* token, struct bookInfoList books);
 // ##########################################################################################################################
 
 /* Mock Local Database Interactor*/
@@ -80,6 +116,10 @@ int64 generateSaltedHash(char* password, int salt);
 // Returns 2 if invalid characters are used in the password
 // Returns 3 if password is too weak
 int validatePassword(char* password);
+// Confirms password
+// Returns 0 if the passwords match
+// Returns 1 if the password does not match
+int matchPassword(char* password, char* passwordc);
 // Validates username to contain no whitespaces or invalid characters
 // Returns 0 if username is valid
 // Returns 1 if username contains invalid characters
@@ -87,6 +127,8 @@ int validatePassword(char* password);
 int validateUsername(char* username);
 // Generates unique token for a username
 char* generateToken(char* username, int64 hash);
+// Clears the previous screen and loads new screen
+void loadScreen(void (*screen)());
 
 // ##########################################################################################################################
 
@@ -112,7 +154,8 @@ char* getCurrentUser();
 // Returns 4 if the password is too weak
 // Returns 5 if the username contains invaiid characters
 // Returns 6 if the username is longer than 16 characters
-int registerUser(char* username, char* password);
+// Returns 7 if the passwords does not match
+int registerUser(char* username, char* password, char* passwordc);
 // Removes User
 void removeUser(char* username);
 
@@ -120,9 +163,15 @@ void removeUser(char* username);
 
 /*UI Layer*/
 
+void newScreen(void (*screen)());
+void splashScreen();
+void welcomeScreen();
 void loginUI();
 void registerUI();
-
+void homeScreen();
+void issuedBookUI();
+void bookStoreUI();
+void 
 // ##########################################################################################################################
 
 int main(){
@@ -142,26 +191,55 @@ int main(){
 	//char* token = generateToken("ayush", 15243);
 	//int ret=registerUser("ayushsumanyo", "Password123");
 	//login("ayushsumanyo", "Password123");
-	//printf("\e[1;1H\e[2J");
-	//printf("WELCOME TO E-LIBRARY PORTAL\n\n");
-	//print("Loading...");
-
-	//printf("If you are an old user, Press 1 to Log In\n");
-	//printf("If you are a new user, Press 2 to Register\n\n");
-	//int r = fgetc(stdin)-'0';
-	//if(r==1){
-	//	loginUI();
-	//} else if(r==2){
-	//	registerUI();
-	//} else {
-	//	printf("NOT A VALID ENTRY!");
-	//}
-	char* username = (char*) malloc(50 * sizeof(char));
-	int ret = verifyToken("lJf9SpfllcpnqyAKqy", username);
-	printf("%d\n%s", ret, username);
+	//welcomeScreen();
+	//char* username = (char*) malloc(50 * sizeof(char));
+	//int ret = verifyToken("lJf9SpfllcpnqyAKqy", username);
+	//printf("%d\n%s", ret, username);
+	newScreen(splashScreen);
+	for(;;){
+		loadScreen(SCREEN);
+	}
+	//loadScreen(splashScreen);
 }
 
 // ##########################################################################################################################
+
+void newScreen(void (*screen)()){
+	SCREEN = screen;
+}
+
+void splashScreen(){
+	printf("WELCOME TO E-LIBRARY PORTAL\n\n");
+	printf("Loading...\n");
+	USERNAME = getCurrentUser();
+	if(USERNAME == "\0"){
+		newScreen(welcomeScreen);
+	}else{
+		newScreen(homeScreen);
+	}
+}
+
+
+void welcomeScreen(){
+	printf("WELCOME TO E-LIBRARY PORTAL\n\n");
+option:	printf("If you are an old user, Press 1 to Log In\n");
+	printf("If you are a new user, Press 2 to Register\n\n");
+	int r = fgetc(stdin)-'0';
+	if(r==1){
+		newScreen(loginUI);
+	} else if(r==2){
+		newScreen(registerUI);
+	} else {
+		printf("NOT A VALID ENTRY!\nEnter Again:\n");
+		goto option;
+	}
+}
+
+void homeScreen(){
+	printf("HOMESCREEN %s\n", USERNAME);
+	exit(0);
+}
+
 
 void loginUI(){
 	char username[500];
@@ -175,30 +253,94 @@ void loginUI(){
 	password[50]='\0';
 	int ret = login(username, password);
 	if(ret==0){
-		printf("Logged In");
+		printf("Logged In\n");
+		printf("\e[1;1H\e[2J");
+		newScreen(homeScreen);
 	}else{
-		printf("Incorrect username or password");
+		printf("Incorrect username or password\n");
+loginOption:	printf("Press 1 to try again\nPress 2 to return to Welcome page\n");
+		int r=0;
+		scanf("%d", &r);
+		if(r==1){
+			return;	
+		}else if(r==2){
+			newScreen(welcomeScreen);
+		}else{
+			printf("NOT A VALID ENTRY!\nEnter Again:\n");
+			goto loginOption;
+		}
 	}
 }
 
 void registerUI(){
-	printf("Registering...");
+	char* username;
+	char* password;
+	char* passwordc;
+enter:	printf("Enter New Username:\n");
+	scanf("%s", username);
+	printf("Enter Password:\n");
+	scanf("%s", password);
+	printf("Enter the password again:\n");
+	scanf("%s", passwordc);
+	int ret = registerUser(username, password, passwordc);
+	if(ret == 0){
+		printf("User successfully registered");
+		printf("Hit ENTER to continue...");
+		char c;
+		scanf("%c", &c);
+		newScreen(welcomeScreen);
+		return;
+
+	} else if(ret == 7){
+		printf("Password does not match\n");
+	} else if(ret == 1){
+		printf("User already exists\n");
+	} else if(ret == 2){
+		printf("Password length should be >=8 and <= 16\n");
+	} else if(ret == 3){
+		printf("Password should contain characters from 0 to 9, a to z and A to z\n");
+	} else if(ret == 4){
+		printf("Password is too weak. Should have atleast one uppercase, one lowercase and one numerical character\n");	
+	} else if(ret == 5){
+		printf("Username should contain characters from 0 to 9, a to z and A to Z\n");
+	} else if(ret == 6){
+		printf("Username should not be longer than 16 characters\n");
+	} else {
+		printf("Something Went Wrong!");
+	}
+registerOption:	printf("Press 1 to try again\nPress 2 to return to Welcome page\n");
+		int r=0;
+		scanf("%d", &r);
+		if(r==1){
+			return;	
+		}else if(r==2){
+			newScreen(welcomeScreen);
+		}else{
+			printf("NOT A VALID ENTRY!\nEnter Again:\n");
+			goto registerOption;
+		}
+	
+
 }
 
 char* getCurrentUser(){
 	char* token = (char*) malloc(50*sizeof(char));
-	getToken(token);
-	if(token==NULL){
-		free(token);
-		return NULL;
+	int re = getToken(token);
+	if(re == 1){
+		return "\0";
 	}
 	char* username = (char*) malloc(50*sizeof(char));
 	int ret = verifyToken(token, username);
 	if(ret==0){
 		return username;
 	} else {
-		return NULL;
+		return "\0";
 	}
+}
+
+void loadScreen(void (*screen)()){
+	printf("\e[1;1H\e[2J");
+	screen();
 }
 
 int verifyToken(char* token, char* username){
@@ -248,6 +390,10 @@ int getToken(char* token){
 		return -1;
 	}
 	fgets(token, 50, fp);
+	if(token[0] == '\0'){
+		free(token);
+		return 1;
+	}
 	fclose(fp);
 	return 0;
 }
@@ -284,6 +430,19 @@ int64 generateSaltedHash(char* password, int salt){
     	}
     	free(x);
     	return hash;
+}
+
+int matchPassword(char* password, char* passwordc){
+	int plen = strlen(password);
+	if(plen != strlen(passwordc)){
+		return 1;		
+	}
+	for(int i=0; i<plen; i++){
+		if(password[i]!= passwordc[i]){
+			return 1;
+		}
+	}
+	return 0;
 }
 
 int validateUsername(char* username){
@@ -350,8 +509,12 @@ int saveToken(char* token){
 	return 0;
 }
 
-int registerUser(char* username, char* password){
-    	int u_status = validateUsername(username);
+int registerUser(char* username, char* password, char* passwordc){
+    	int match = matchPassword(password, passwordc); 
+	if(match==1){
+		return 7;
+	}
+	int u_status = validateUsername(username);
     	if(u_status!=0){
         	return u_status+4;
     	}
