@@ -77,7 +77,7 @@ void deleteTokenPermenantly(char* username);
 // Returns -1 if file does not open
 int verifyToken(char* token, char* username);
 // Public API for searching through the book store
-int searchBooks(char* book, struct bookList list);
+int searchBooks(char* book, struct bookList* books);
 // Public API for getting book info of the requested Issue No
 int getBookByID(char* id, struct bookClass *book);
 // API for getting wish list info
@@ -203,6 +203,9 @@ int main(){
 	//struct bookClass *book = (struct bookClass*) malloc(sizeof(struct bookClass));
 	//int ret = getBookByID("issueno", book);
 	//printf("%d\n%s", ret, book->bookTitle);
+	//struct bookList* books = (struct bookList*) malloc(sizeof(struct bookList));
+	//searchBooks("book", books);
+	//printf("%s", books->next->book.bookTitle);
 }
 
 // ##########################################################################################################################
@@ -714,11 +717,90 @@ int getBookByID(char* id, struct bookClass *book){
 				fgets(line, 20, fp);
 				line[strlen(line)-1]='\0';
 				book->issued = atoi(line);
+				fclose(fp);
 				return 0;
 			}
 		}
 		linenum++;
 	}
+	fclose(fp);
 	return 1;
 
 }
+
+int searchBooks(char* book, struct bookList *books){
+	int size = 0;
+	FILE* fp;
+	fp = fopen("Server/bookStore.txt", "r");
+	if(fp==NULL){
+		return -1;
+	}
+	struct bookList* booklist = books;
+	int blen = strlen(book);
+	char line[20];
+	int blocknum=0;
+	while(fgets(line, 20, fp)){
+nextblock:	for(int i=0; i<5; i++){
+			int llen = strlen(line);
+			if(llen>blen){
+				for(int i=0; i<llen-blen; i++){
+					int cmp = strncmp(book, &line[i], blen);
+					if(cmp==0){
+						rewind(fp);
+						for(int j=0; j<=blocknum*5; j++){
+							fgets(line, 20, fp);
+						}
+						booklist->next = (struct bookList*) malloc(sizeof(struct bookList));
+						strcpy(booklist->book.id, line);	
+						fgets(line, 20, fp);
+						line[strlen(line)-1]='\0';
+						strcpy(booklist->book.bookTitle, line);	
+						fgets(line, 20, fp);
+						line[strlen(line)-1]='\0';
+						strcpy(booklist->book.author, line);	
+						fgets(line, 20, fp);
+						line[strlen(line)-1]='\0';
+						booklist->book.quantity = atoi(line);
+						fgets(line, 20, fp);
+						line[strlen(line)-1]='\0';
+						booklist->book.issued = atoi(line);
+						booklist = booklist->next;
+						size++;
+						if(fgets(line, 20, fp)){
+							blocknum++;
+							goto nextblock;
+						}else{
+							fclose(fp);
+							return size;
+						}
+					}
+				}
+			}
+			fgets(line, 20, fp);
+		}
+		blocknum++;
+	}
+
+	fclose(fp);
+	return 0;
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
