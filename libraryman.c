@@ -95,6 +95,8 @@ int getWishListInfo(char* token, struct bookInfoList* books);
 int getIssuedBookInfo(char* token, struct bookInfoList* books);
 // Authenticated API to issue a book
 int issueBook(char* token, struct bookInfo book, time_t time);
+
+int returnBook(char* token, char* id);
 // ##########################################################################################################################
 
 /* Mock Local Database Interactor*/
@@ -169,10 +171,18 @@ char* getCurrentUser();
 int registerUser(char* username, char* password, char* passwordc);
 // Removes User
 void removeUser(char* username);
-
-void issueBookByID(char* token, char* id);
-
+// issues book if available
+// Returns -1 if something went wrong
+// Returns 0 if book issued successfully
+// Returns 1 if book not available
+// Returns 2 if book is already issued
+int issueBookByID(char* token, char* id);
+// searches the book store for the given keyword
+// Returns -1 if something went wrong
+// Returns the number of books that matched
 int search(char* book, struct bookList* books);
+// Finds the books that are due
+void dueBooks(char* token, struct bookInfoList* books);
 // ##########################################################################################################################
 
 /*UI Layer*/
@@ -187,7 +197,7 @@ void issuedBookUI();
 void bookStoreUI();
 
 void loadBooks(struct bookList* books);
- 
+void createDueNotification(struct bookInfoList books);
 // ##########################################################################################################################
 
 int main(){
