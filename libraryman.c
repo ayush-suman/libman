@@ -210,9 +210,9 @@ int main(){
 	//struct bookClass *book = (struct bookClass*) malloc(sizeof(struct bookClass));
 	//int ret = getBookByID("issueno", book);
 	//printf("%d\n%s", ret, book->bookTitle);
-	//struct bookInfoList* books = (struct bookInfoList*) malloc(sizeof(struct bookInfoList));
-	//searchBooks("book", books);
-	//printf("%s", books->next->book.bookTitle);
+	//struct bookList* books = (struct bookList*) malloc(sizeof(struct bookList));
+	//int size = searchBooks("issue", books);
+	//printf("%d\n%s", size, books->book.bookTitle);
 	//int size = getWishListInfo("tosen", books);
 	//printf("%d\n%s",size, books->book.id);
 }
@@ -759,6 +759,7 @@ nextblock:	for(int i=0; i<5; i++){
 						for(int j=0; j<=blocknum*5; j++){
 							fgets(line, 20, fp);
 						}
+						size++;
 						booklist->next = (struct bookList*) malloc(sizeof(struct bookList));
 						strcpy(booklist->book.id, line);	
 						fgets(line, 20, fp);
@@ -774,7 +775,6 @@ nextblock:	for(int i=0; i<5; i++){
 						line[strlen(line)-1]='\0';
 						booklist->book.issued = atoi(line);
 						booklist = booklist->next;
-						size++;
 						if(fgets(line, 20, fp)){
 							blocknum++;
 							goto nextblock;
@@ -791,7 +791,7 @@ nextblock:	for(int i=0; i<5; i++){
 	}
 
 	fclose(fp);
-	return 0;
+	return size;
 
 }
 
