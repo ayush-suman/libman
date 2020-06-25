@@ -22,15 +22,17 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
+#include<time.h>
+
 
 typedef unsigned long long int64;
 static void (*SCREEN)();
 static char* USERNAME;
 
 struct bookClass {
-	char id[20];
-	char bookTitle[20];
-	char author[20];
+	char id[50];
+	char bookTitle[50];
+	char author[50];
 	int quantity;
 	int issued;
 };
@@ -42,15 +44,22 @@ struct bookList {
 
 
 struct bookInfo {
-	char id[20];
-	char bookTitle[20];
-	char author[20];
+	char id[50];
+	char bookTitle[50];
+	char author[50];
 };
 
 
 struct bookInfoList {
 	struct bookInfo book;
+	time_t time;
 	struct bookInfoList* next;
+};
+
+
+struct txtFile{
+	char line[50];
+	struct txtFile* next;
 };
 
 
@@ -80,12 +89,12 @@ int verifyToken(char* token, char* username);
 int searchBooks(char* book, struct bookList* books);
 // Public API for getting book info of the requested Issue No
 int getBookByID(char* id, struct bookClass *book);
-// API for getting wish list info
+// Authenticated API for getting wish list info
 int getWishListInfo(char* token, struct bookInfoList* books);
-// API for returning the info of the book issued
+// Authenticated API for returning the info of the book issued
 int getIssuedBookInfo(char* token, struct bookInfoList* books);
-
-int issueBook(char* token, struct bookClass book);
+// Authenticated API to issue a book
+int issueBook(char* token, struct bookInfo book, time_t time);
 // ##########################################################################################################################
 
 /* Mock Local Database Interactor*/
@@ -202,10 +211,10 @@ int main(){
 	//char* username = (char*) malloc(50 * sizeof(char));
 	//int ret = verifyToken("lJf9SpfllcpnqyAKqy", username);
 	//printf("%d\n%s", ret, username);
-	newScreen(splashScreen);
-	for(;;){
-		loadScreen(SCREEN);
-	}
+//	newScreen(splashScreen);
+//	for(;;){
+//		loadScreen(SCREEN);
+//	}
 	//loadScreen(splashScreen);
 	//struct bookClass *book = (struct bookClass*) malloc(sizeof(struct bookClass));
 	//int ret = getBookByID("issueno", book);
@@ -215,6 +224,13 @@ int main(){
 	//printf("%d\n%s", size, books->book.bookTitle);
 	//int size = getWishListInfo("tosen", books);
 	//printf("%d\n%s",size, books->book.id);
+	struct bookInfo book = {
+	.id = "new",
+	.bookTitle = "New Title",
+	.author = "Ayush"
+	};
+	int ret = issueBook("token6", book, 123123);
+	printf("%d\n", ret);
 }
 
 // ##########################################################################################################################
@@ -535,7 +551,6 @@ int registerUser(char* username, char* password, char* passwordc){
     	}
     	int p_status = validatePassword(password);
     	if(p_status!=0){
-		printf("Password not validated");
         	return p_status+1;
 	}
 	int salt = generateSalt(username);
@@ -706,24 +721,24 @@ int getBookByID(char* id, struct bookClass *book){
 	if(fp==NULL){
 		return -1;
 	}
-	char line[20];
+	char line[50];
 	int linenum=0;
-	while(fgets(line, 20, fp)){
+	while(fgets(line, 50, fp)){
 		if((linenum%5)==0){
 			line[strlen(line)-1]='\0';
 			int cmp = strcmp(id, line);
 			if(cmp==0){
 				strcpy(book->id, line);	
-				fgets(line, 20, fp);
+				fgets(line, 50, fp);
 				line[strlen(line)-1]='\0';
 				strcpy(book->bookTitle, line);	
-				fgets(line, 20, fp);
+				fgets(line, 50, fp);
 				line[strlen(line)-1]='\0';
 				strcpy(book->author, line);	
-				fgets(line, 20, fp);
+				fgets(line, 50, fp);
 				line[strlen(line)-1]='\0';
 				book->quantity = atoi(line);
-				fgets(line, 20, fp);
+				fgets(line, 50, fp);
 				line[strlen(line)-1]='\0';
 				book->issued = atoi(line);
 				fclose(fp);
@@ -746,9 +761,9 @@ int searchBooks(char* book, struct bookList *books){
 	}
 	struct bookList* booklist = books;
 	int blen = strlen(book);
-	char line[20];
+	char line[50];
 	int blocknum=0;
-	while(fgets(line, 20, fp)){
+	while(fgets(line, 50, fp)){
 nextblock:	for(int i=0; i<5; i++){
 			int llen = strlen(line);
 			if(llen>blen){
@@ -757,25 +772,25 @@ nextblock:	for(int i=0; i<5; i++){
 					if(cmp==0){
 						rewind(fp);
 						for(int j=0; j<=blocknum*5; j++){
-							fgets(line, 20, fp);
+							fgets(line, 50, fp);
 						}
 						size++;
 						booklist->next = (struct bookList*) malloc(sizeof(struct bookList));
 						strcpy(booklist->book.id, line);	
-						fgets(line, 20, fp);
+						fgets(line, 50, fp);
 						line[strlen(line)-1]='\0';
 						strcpy(booklist->book.bookTitle, line);	
-						fgets(line, 20, fp);
+						fgets(line, 50, fp);
 						line[strlen(line)-1]='\0';
 						strcpy(booklist->book.author, line);	
-						fgets(line, 20, fp);
+						fgets(line, 50, fp);
 						line[strlen(line)-1]='\0';
 						booklist->book.quantity = atoi(line);
-						fgets(line, 20, fp);
+						fgets(line, 50, fp);
 						line[strlen(line)-1]='\0';
 						booklist->book.issued = atoi(line);
 						booklist = booklist->next;
-						if(fgets(line, 20, fp)){
+						if(fgets(line, 50, fp)){
 							blocknum++;
 							goto nextblock;
 						}else{
@@ -802,28 +817,80 @@ int getWishListInfo(char* token, struct bookInfoList* books){
 		return -1;
 	}
 	int tokenline=1;
-	char line[20];
-	while(fgets(line, 20, fp)){
+	char line[50];
+	while(fgets(line, 50, fp)){
 		if(tokenline==1){
 			line[strlen(line)-1]='\0';
 			int cmp = strcmp(token, line);
 			if(cmp==0){
 				int size = 0;
 				struct bookInfoList* booklist = books;
-				fgets(line, 20, fp);
+				fgets(line, 50, fp);
 				while(1){
 					booklist->next = (struct bookInfoList*) malloc(sizeof(struct bookInfoList));
 					line[strlen(line)-1]='\0';
 					strcpy(booklist->book.id, line);
-					fgets(line, 20, fp);
+					fgets(line, 50, fp);
 					line[strlen(line)-1]='\0';
 					strcpy(booklist->book.bookTitle, line);
-					fgets(line, 20, fp);
+					fgets(line, 50, fp);
 					line[strlen(line)-1]='\0';
 					strcpy(booklist->book.author, line);
 					size++;
 					booklist = booklist->next;
-					fgets(line, 20, fp);
+					fgets(line, 50, fp);
+					if(strcmp(line, "\n")==0){
+						fclose(fp);
+						return size;
+					}
+				}
+			}
+
+		
+		}
+		if(line[0] =='\n'){
+			tokenline = 1;
+		}else{
+			tokenline = 0;
+		}
+
+	}
+	fclose(fp);
+	return 0;
+}
+
+int getIssuedBookInfo(char* token, struct bookInfoList* books){
+	FILE* fp;
+	fp = fopen("Server/issuedBooks.txt", "r");
+	if(fp==NULL){
+		return -1;
+	}
+	int tokenline=1;
+	char line[50];
+	while(fgets(line, 50, fp)){
+		if(tokenline==1){
+			line[strlen(line)-1]='\0';
+			int cmp = strcmp(token, line);
+			if(cmp==0){
+				int size = 0;
+				struct bookInfoList* booklist = books;
+				fgets(line, 50, fp);
+				while(1){
+					booklist->next = (struct bookInfoList*) malloc(sizeof(struct bookInfoList));
+					line[strlen(line)-1]='\0';
+					strcpy(booklist->book.id, line);
+					fgets(line, 50, fp);
+					line[strlen(line)-1]='\0';
+					strcpy(booklist->book.bookTitle, line);
+					fgets(line, 50, fp);
+					line[strlen(line)-1]='\0';
+					strcpy(booklist->book.author, line);
+					fgets(line, 50, fp);
+					line[strlen(line)-1]='\0';
+					booklist->time = atoi(line);
+					size++;
+					booklist = booklist->next;
+					fgets(line, 50, fp);
 					if(strcmp(line, "\n")==0){
 						fclose(fp);
 						return size;
@@ -845,9 +912,59 @@ int getWishListInfo(char* token, struct bookInfoList* books){
 }
 
 
+int issueBook(char* token, struct bookInfo book, time_t time){
+	FILE* fp;
+	fp = fopen("Server/issuedBooks.txt", "r");
+	if(fp==NULL){
+		return -1;
+	}
+	int exists = 0;
+	char line[50];
+	struct txtFile* txtfile = (struct txtFile*) malloc(sizeof(struct txtFile));
+	struct txtFile* last = txtfile;
+	while(fgets(line, 50, fp)){
+		last->next = (struct txtFile*) malloc(sizeof(struct txtFile));
+		strcpy(last->line, line);
+		last = last->next;
+	}
+	fp = freopen("Server/issuedBooks.txt", "w", fp);
+	while(txtfile != NULL){
+		fputs(txtfile->line, fp);
+		txtfile->line[strlen(txtfile->line)-1] = '\0';
+		if(strcmp(txtfile->line, token)==0){
+			exists = 1;
+			fputs(book.id, fp);
+			fputs("\n", fp);
+			fputs(book.bookTitle, fp);
+			fputs("\n", fp);
+			fputs(book.author, fp);
+			fputs("\n", fp);
+			char timeS[50];
+			sprintf(timeS, "%ld", time);
+			fputs(timeS, fp);
+			fputs("\n", fp);
+		}
+		txtfile = txtfile->next;
+	}
+	if(exists == 0){
+		fputs(token, fp);
+		fputs("\n", fp);
+		fputs(book.id, fp);
+		fputs("\n", fp);
+		fputs(book.bookTitle, fp);
+		fputs("\n", fp);
+		fputs(book.author, fp);
+		fputs("\n", fp);
+		char timeS[50];
+		sprintf(timeS, "%ld", time);
+		fputs(timeS, fp);
+		fputs("\n", fp);
+		fputs("\n", fp);
 
+	}
+	fclose(fp);
 
-
+}
 
 
 
