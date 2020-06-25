@@ -81,9 +81,11 @@ int searchBooks(char* book, struct bookList* books);
 // Public API for getting book info of the requested Issue No
 int getBookByID(char* id, struct bookClass *book);
 // API for getting wish list info
-int getWishListInfo(char* token, struct bookInfoList books);
+int getWishListInfo(char* token, struct bookInfoList* books);
 // API for returning the info of the book issued
-int getIssuedBookInfo(char* token, struct bookInfoList books);
+int getIssuedBookInfo(char* token, struct bookInfoList* books);
+
+int issueBook(char* token, struct bookClass book);
 // ##########################################################################################################################
 
 /* Mock Local Database Interactor*/
@@ -159,6 +161,9 @@ int registerUser(char* username, char* password, char* passwordc);
 // Removes User
 void removeUser(char* username);
 
+void issueBookByID(char* token, char* id);
+
+int search(char* book, struct bookList* books);
 // ##########################################################################################################################
 
 /*UI Layer*/
@@ -171,6 +176,8 @@ void registerUI();
 void homeScreen();
 void issuedBookUI();
 void bookStoreUI();
+
+void loadBooks(struct bookList* books);
  
 // ##########################################################################################################################
 
@@ -203,9 +210,11 @@ int main(){
 	//struct bookClass *book = (struct bookClass*) malloc(sizeof(struct bookClass));
 	//int ret = getBookByID("issueno", book);
 	//printf("%d\n%s", ret, book->bookTitle);
-	//struct bookList* books = (struct bookList*) malloc(sizeof(struct bookList));
+	//struct bookInfoList* books = (struct bookInfoList*) malloc(sizeof(struct bookInfoList));
 	//searchBooks("book", books);
 	//printf("%s", books->next->book.bookTitle);
+	//int size = getWishListInfo("tosen", books);
+	//printf("%d\n%s",size, books->book.id);
 }
 
 // ##########################################################################################################################
@@ -786,7 +795,54 @@ nextblock:	for(int i=0; i<5; i++){
 
 }
 
+int getWishListInfo(char* token, struct bookInfoList* books){
+	FILE* fp;
+	fp = fopen("Server/wishList.txt", "r");
+	if(fp==NULL){
+		return -1;
+	}
+	int tokenline=1;
+	char line[20];
+	while(fgets(line, 20, fp)){
+		if(tokenline==1){
+			line[strlen(line)-1]='\0';
+			int cmp = strcmp(token, line);
+			if(cmp==0){
+				int size = 0;
+				struct bookInfoList* booklist = books;
+				fgets(line, 20, fp);
+				while(1){
+					booklist->next = (struct bookInfoList*) malloc(sizeof(struct bookInfoList));
+					line[strlen(line)-1]='\0';
+					strcpy(booklist->book.id, line);
+					fgets(line, 20, fp);
+					line[strlen(line)-1]='\0';
+					strcpy(booklist->book.bookTitle, line);
+					fgets(line, 20, fp);
+					line[strlen(line)-1]='\0';
+					strcpy(booklist->book.author, line);
+					size++;
+					booklist = booklist->next;
+					fgets(line, 20, fp);
+					if(strcmp(line, "\n")==0){
+						fclose(fp);
+						return size;
+					}
+				}
+			}
 
+		
+		}
+		if(line[0] =='\n'){
+			tokenline = 1;
+		}else{
+			tokenline = 0;
+		}
+
+	}
+	fclose(fp);
+	return 0;
+}
 
 
 
