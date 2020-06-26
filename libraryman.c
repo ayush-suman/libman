@@ -82,8 +82,8 @@ int verifyCredentialsForAdmin(char* username, int64 hash, char *token);
 // Returns 1 if username already exists
 // Returns -1 if the file does not open
 int createNewToken(char* username, int64 hash);
-// Removes a user by permenantly deleting the login token from server
-void deleteTokenPermenantly(char* username);
+// Removes a user by permanently deleting the login token from server
+int deleteTokenPermanently(char* username);
 // Returns all users in userlist
 int viewUsers(struct users* userlist);
 // Verifies requested token and puts username in the username argument
@@ -126,7 +126,7 @@ int getToken(char* token);
 // Deletes current user login token
 // Returns -1 if the file does not open
 // Returns 0 if the token is successfully deleted
-int deleteToken();
+void deleteToken();
 
 // ##########################################################################################################################
 
@@ -187,7 +187,8 @@ int registerUser(char* username, char* password, char* passwordc);
 // Returns the size of user and userlist
 int getAllUsers(struct users* userlist);
 // Removes User
-void removeUser(char* username);
+int removeUser(char* username);
+int deleteMyAccount(char* username);
 // Issues book if available
 // Increases issue count by 1 if issued successfully
 // Returns -1 if something went wrong
@@ -277,6 +278,8 @@ int main(){
 	//struct users* userslist = (struct users*) malloc(sizeof(struct users*));
 	//int ret = viewUsers(userslist);
 	//printf("%d\n%s", ret, userslist->username);
+	int ret = deleteTokenPermanently("ayushsumanyo");
+	printf("%d\n", ret);
 }
 
 // ##########################################################################################################################
@@ -298,11 +301,74 @@ int viewUsers(struct users* userlist){
 		fgets(line, 20, fp);
 		fgets(line, 20, fp);
 	}
+	fclose(fp);
 	return size;
 }
 
 int getAllUsers(struct users* userlist){
 	return viewUsers(userlist);	
+}
+
+int removeUser(char* username){
+	return deleteTokenPermanently(username);	
+}
+
+int deleteMyAccount(char* username){
+	int ret = deleteTokenPermanently(username);
+	if(ret!=0){
+		return ret;
+	}
+	deleteToken();
+	return 0;
+}
+
+int deleteTokenPermanently(char* username){
+	FILE* fp;
+	fp = fopen("Server/tokenStore.txt", "r");
+	if(fp==NULL){
+		return -1;
+	}
+	struct txtFile* original = (struct txtFile*) malloc(sizeof(struct txtFile));
+	struct txtFile* txtfile = original;
+	struct txtFile* last = txtfile;
+	int filesize = 0;
+	char line[20];
+	while(fgets(line, 20, fp)){
+		strcpy(last->line, line);
+		filesize++;
+		last->next = malloc(sizeof(struct txtFile));
+		last = last->next;
+	}
+	fp = freopen("Server/tokenStore.txt", "w", fp);
+	for(int i=0; i<filesize;i++){
+		txtfile->line[strlen(txtfile->line)-1]='\0';
+		if(strcmp(txtfile->line, username)==0){
+			for(int j=0; j<3; j++){
+				i++;
+				txtfile = txtfile->next;
+			}
+		txtfile->line[strlen(txtfile->line)-1]='\0';
+		}
+		fputs(txtfile->line, fp);
+		fputs("\n", fp);
+		txtfile = txtfile->next;
+	}
+	for(int i=0; i<filesize; i++){
+		free(original);
+		original = original->next;
+	}
+	fclose(fp);
+	return 0;
+}
+
+void deleteToken(){
+	FILE* fp;
+	fp = fopen("Local/token.txt","w");
+	fclose(fp);
+}
+
+void logout(){
+	deleteToken();
 }
 
 int issueBookByID(char* token, char* id){
