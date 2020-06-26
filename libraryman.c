@@ -76,6 +76,7 @@ struct users{
 // Returns 1 if the credentials are incorrect
 // Returns -1 if the file does not open
 int verifyCredentials(char* username, int64 hash, char *token);
+int verifyCredentialsForAdmin(char* username, int64 hash, char *token);
 // Registers new user by creating a login token for the user
 // Returns 0 if token is created successfully
 // Returns 1 if username already exists
@@ -166,6 +167,7 @@ void loadScreen(void (*screen)());
 // Returns 1 if the username or the password was incorrect
 // Returns
 int login(char* username, char* password);
+int loginAsAdmin(char* username, char* password);
 // Logs the user out
 void logout();
 // Looks for login token and verifies it
@@ -272,9 +274,9 @@ int main(){
 	//printf("%d\n", ret);
 	//int ret = returnBook("token2", "issueNo4");
 	//printf("%d\n", ret);
-	struct users* userslist = (struct users*) malloc(sizeof(struct users*));
-	int ret = viewUsers(userslist);
-	printf("%d\n%s", ret, userslist->username);
+	//struct users* userslist = (struct users*) malloc(sizeof(struct users*));
+	//int ret = viewUsers(userslist);
+	//printf("%d\n%s", ret, userslist->username);
 }
 
 // ##########################################################################################################################
@@ -635,6 +637,17 @@ int login(char* username, char* password){
 	
 }
 
+int loginAsAdmin(char* username, char* password){
+    	int salt = generateSalt(username);
+    	int64 p_hash = generateSaltedHash(password, salt);
+    	char token[50];
+    	int ret = verifyCredentialsForAdmin(username, p_hash, token);
+	if(ret != 0){
+		return ret;
+	}
+    	return saveToken(token);
+}
+
 int saveToken(char* token){
 	FILE* fp;
 	fp = fopen("Local/token.txt", "w");
@@ -820,6 +833,67 @@ int verifyCredentials(char* username, int64 hash, char* token){
 	return 1;
 
 }
+
+int verifyCredentialsForAdmin(char* username, int64 hash, char* token){
+	int ulen =  strlen(username);
+	char ha[50];
+	int hlen = sprintf(ha, "%llu", hash);
+	FILE* fp;
+	fp = fopen("Server/adminTokenStore.txt", "r");
+	if(fp == NULL){
+		return -1;
+	}
+	char line[50];
+	int linenum=0;
+	int equals=0; 		
+	while(fgets(line, 50, fp)){
+		if((linenum%3) == 0 ){
+			if(ulen==(strlen(line)-1)){
+				for(int i=0; i<ulen; i++){
+					if(username[i]==line[i]){
+						equals=1;			
+					}else{
+						equals=0;
+						break;
+					}
+				}
+			}
+		}
+		if(equals==1){
+			fgets(line, 50, fp);
+			int creds=0;
+			if(hlen== (strlen(line)-1)){
+				for(int i=0; i<hlen; i++){
+					if(ha[i]==line[i]){
+						creds=1;
+					}else{
+						creds=0;
+						break;
+					}
+				}
+			}
+			if(creds==0){
+				fclose(fp);
+				return 1;
+			}else{
+				fgets(line, 50, fp);
+				for(int i=0; i<50; i++){
+					if(line[i]=='\n'){
+						token[i] ='\0';
+						break;
+					}
+					token[i] = line[i];
+				}
+				fclose(fp);
+				return 0;
+			}
+		}
+		linenum++;
+	}
+	fclose(fp);
+	return 1;
+}
+
 
 int getBookByID(char* id, struct bookClass *book){
 	FILE* fp;
