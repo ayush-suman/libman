@@ -103,6 +103,7 @@ int issueBook(char* token, struct bookInfo book, time_t time);
 // Returns a issued book
 // Returns -1 if file does not open
 // Returns 0 if book successfully returned
+// Returns 1 if the book NOT found
 int returnBook(char* token, char* id);
 // ##########################################################################################################################
 
@@ -1082,6 +1083,7 @@ int returnBook(char* token, char* id){
 	if(fp == NULL){
 		return -1;
 	}
+	int match=1;
 	int success = 0;
 	int exists = 0;
 	int try = 0;
@@ -1105,6 +1107,7 @@ returnLoop:		txtfile = txtfile->next;
 				try++;
 				txtfile->line[strlen(txtfile->line)-1]='\0';
 				if(strcmp(txtfile->line, id)==0){
+					match=0;
 					for(int j=0; j<4; j++){
 						txtfile = txtfile->next;
 						i++;
@@ -1214,8 +1217,8 @@ ending:	while(original!=0){
 		original=original->next;
 	}
 	fclose(fp);
-	return 0;
 	}
+	return match;
 
 }
 
