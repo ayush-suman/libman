@@ -72,7 +72,6 @@ struct txtFile{
 // Returns 1 if the credentials are incorrect
 // Returns -1 if the file does not open
 int verifyCredentials(char* username, int64 hash, char *token);
-
 // Registers new user by creating a login token for the user
 // Returns 0 if token is created successfully
 // Returns 1 if username already exists
@@ -261,8 +260,8 @@ int main(){
 	//printf("%d\n", ret);
 	//int ret = issueBookByID("tokentok", "issueNo4");
 	//printf("%d\n", ret);
-	int ret = returnBook("token2", "issueNo4");
-	printf("%d\n", ret);
+	//int ret = returnBook("token2", "issueNo4");
+	//printf("%d\n", ret);
 }
 
 // ##########################################################################################################################
@@ -287,6 +286,22 @@ int issueBookByID(char* token, char* id){
 
 int returnIssued(char* token, char* id){
 	return returnBook(token, id);
+}
+
+void dueBooks(char* token, struct bookInfoList* books){
+	int size = getIssuedBookInfo(token, books);
+	time_t t = time(NULL);
+	struct bookListInfo* booklist;
+	for(int i=0; i<size; i++){
+		if((books->time-t)>1296000){
+			booklist->book = books->book;
+			booklist->next = (struct bookListInfo*) malloc(sizeof(struct bookListInfo));
+			booklist = booklist->next;
+		}
+		books->next;
+	}
+	//createNotification;
+
 }
 
 void newScreen(void (*screen)()){
