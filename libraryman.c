@@ -234,12 +234,14 @@ int main(){
 	//printf("%d\n%s", size, books->book.bookTitle);
 	//int size = getWishListInfo("tosen", books);
 	//printf("%d\n%s",size, books->book.id);
-	struct bookInfo book = {
-	.id = "new",
-	.bookTitle = "New Title",
-	.author = "Ayush"
-	};
-	int ret = issueBook("token6", book, 123123);
+	//struct bookInfo book = {
+	//.id = "new",
+	//.bookTitle = "New Title",
+	//.author = "Ayush"
+	//};
+	//int ret = issueBook("token6", book, 123123);
+	//printf("%d\n", ret);
+	int ret = returnBook("token", "issueNo2");
 	printf("%d\n", ret);
 }
 
@@ -930,7 +932,8 @@ int issueBook(char* token, struct bookInfo book, time_t time){
 	}
 	int exists = 0;
 	char line[50];
-	struct txtFile* txtfile = (struct txtFile*) malloc(sizeof(struct txtFile));
+	struct txtFile* original = (struct txtFile*) malloc(sizeof(struct txtFile));
+	struct txtFile* txtfile = original;
 	struct txtFile* last = txtfile;
 	while(fgets(line, 50, fp)){
 		last->next = (struct txtFile*) malloc(sizeof(struct txtFile));
@@ -972,9 +975,89 @@ int issueBook(char* token, struct bookInfo book, time_t time){
 		fputs("\n", fp);
 
 	}
+	free(original);
 	fclose(fp);
 
 }
+
+int returnBook(char* token, char* id){
+	FILE* fp;
+	fp = fopen("Server/issuedBooks.txt", "r");
+	if(fp == NULL){
+		return -1;
+	}
+	int exists = 0;
+	int try = 0;
+	char line[50];
+	struct txtFile* original = (struct txtFile*) malloc(sizeof(struct txtFile));
+	struct txtFile* txtfile = original; 
+	struct txtFile* last = txtfile;
+	while(fgets(line, 50, fp)){
+		last->next = (struct txtFile*) malloc(sizeof(struct txtFile));
+		strcpy(last->line, line);
+		last = last->next;
+	}
+	fp = freopen("Server/issuedBooks.txt", "w", fp);
+	while(txtfile != NULL){
+returnL:	fputs(txtfile->line, fp);
+		if(strncmp(txtfile->line, token, strlen(token))==0){
+returnLoop:		txtfile = txtfile->next;
+			if(txtfile->line[0] != '\n'){
+				try++;
+				if(strncmp(txtfile->line, id, strlen(id))==0){
+					for(int i=0; i<4; i++){
+						txtfile = txtfile->next;
+					}
+					if((txtfile->line[0]=='\n')&&(try==1)){
+						exists = 1;
+					}
+					goto returnL;
+					
+				}else{
+				
+					fputs(txtfile->line, fp);
+					goto returnLoop; 
+				}
+			}else{
+				goto returnL;
+			}
+		}
+		txtfile = txtfile->next;
+	}
+	free(original);
+	if(exists==1){
+		fp = freopen("Server/issuedBooks.txt", "r", fp);
+		original = (struct txtFile*) malloc(sizeof(struct txtFile));
+		txtfile = original; 
+		last = txtfile;
+		while(fgets(line, 50, fp)){
+			last->next = (struct txtFile*) malloc(sizeof(struct txtFile));
+			strcpy(last->line, line);
+			last = last->next;
+		}
+		fp = freopen("Server/issuedBooks.txt", "w", fp);
+		while(txtfile != NULL){
+			if(strncmp(txtfile->line, token, strlen(token))==0){
+				txtfile = txtfile->next;
+				txtfile = txtfile->next;
+			}
+			fputs(txtfile->line,fp);
+			txtfile = txtfile->next;
+		}
+		free(original);
+	}
+
+	fclose(fp);
+}
+
+
+
+
+
+
+
+
+
 
 
 

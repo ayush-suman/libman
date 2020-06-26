@@ -1,50 +1,12 @@
-token
-new
-New Title
-Ayush
-new
-New Title
-Ayush
-new
-New Title
-Ayush
-new
-New Title
-Ayush
+toke2
 issueNo
 bookTitle
-Author
-dateIssued
-issueNo
-bookTitle
-Author
-dateIssued
+author
+date
 
-token2
+toke3
 issueNo
 bookTitle
-Author
-dateIssued
-issueNo
-bookTitle
-Author
-dateIssued
-
-token6
-new
-New Title
-Ayush
-123123
-new
-New Title
-Ayush
-123123
-new
-New Title
-Ayush
-123123
-new
-New Title
-Ayush
-123123
+author
+date
 
