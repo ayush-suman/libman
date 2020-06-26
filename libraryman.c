@@ -62,6 +62,10 @@ struct txtFile{
 	struct txtFile* next;
 };
 
+struct users{
+	char username[20];
+	struct users* next;
+};
 
 // ##########################################################################################################################
 
@@ -79,6 +83,8 @@ int verifyCredentials(char* username, int64 hash, char *token);
 int createNewToken(char* username, int64 hash);
 // Removes a user by permenantly deleting the login token from server
 void deleteTokenPermenantly(char* username);
+// Returns all users in userlist
+int viewUsers(struct users* userlist);
 // Verifies requested token and puts username in the username argument
 // Returns 0 if the token is verified
 // Returns 1 if the token is not verified
@@ -176,6 +182,8 @@ char* getCurrentUser();
 // Returns 6 if the username is longer than 16 characters
 // Returns 7 if the passwords does not match
 int registerUser(char* username, char* password, char* passwordc);
+// Returns the size of user and userlist
+int getAllUsers(struct users* userlist);
 // Removes User
 void removeUser(char* username);
 // Issues book if available
@@ -209,6 +217,8 @@ void registerUI();
 void homeScreen();
 void issuedBookUI();
 void bookStoreUI();
+
+void loginAsAdminUI();
 
 void loadBooks(struct bookList* books);
 void createDueNotification(struct bookInfoList books);
@@ -262,9 +272,36 @@ int main(){
 	//printf("%d\n", ret);
 	//int ret = returnBook("token2", "issueNo4");
 	//printf("%d\n", ret);
+	struct users* userslist = (struct users*) malloc(sizeof(struct users*));
+	int ret = viewUsers(userslist);
+	printf("%d\n%s", ret, userslist->username);
 }
 
 // ##########################################################################################################################
+
+int viewUsers(struct users* userlist){
+	FILE* fp;
+	fp = fopen("Server/tokenStore.txt", "r");
+	if(fp == NULL){
+		return -1;
+	}
+	struct users* user = userlist;
+	char line[20];
+	int size = 0;
+	while(fgets(line, 20, fp)){
+		strcpy(user->username, line);
+		user->next = (struct users*) malloc(sizeof(struct users));
+		user = user->next;
+		size++;
+		fgets(line, 20, fp);
+		fgets(line, 20, fp);
+	}
+	return size;
+}
+
+int getAllUsers(struct users* userlist){
+	return viewUsers(userlist);	
+}
 
 int issueBookByID(char* token, char* id){
 	struct bookClass* book = (struct bookClass*) malloc(sizeof(struct bookClass));
@@ -291,11 +328,11 @@ int returnIssued(char* token, char* id){
 void dueBooks(char* token, struct bookInfoList* books){
 	int size = getIssuedBookInfo(token, books);
 	time_t t = time(NULL);
-	struct bookListInfo* booklist;
+	struct bookInfoList* booklist;
 	for(int i=0; i<size; i++){
 		if((books->time-t)>1296000){
 			booklist->book = books->book;
-			booklist->next = (struct bookListInfo*) malloc(sizeof(struct bookListInfo));
+			booklist->next = (struct bookInfoList*) malloc(sizeof(struct bookInfoList));
 			booklist = booklist->next;
 		}
 		books->next;
