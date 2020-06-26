@@ -86,8 +86,13 @@ void deleteTokenPermenantly(char* username);
 // Returns -1 if file does not open
 int verifyToken(char* token, char* username);
 // Public API for searching through the book store
+// Returns -1 if the file does not open
+// Returns the number of books that matched
 int searchBooks(char* book, struct bookList* books);
 // Public API for getting book info of the requested Issue No
+// Returns -1 if the file does not open
+// Returns 0 if the book is found
+// Returns 1 if the book is NOT found
 int getBookByID(char* id, struct bookClass *book);
 // Authenticated API for getting wish list info
 int getWishListInfo(char* token, struct bookInfoList* books);
@@ -243,19 +248,45 @@ int main(){
 	//printf("%d\n%s", size, books->book.bookTitle);
 	//int size = getWishListInfo("tosen", books);
 	//printf("%d\n%s",size, books->book.id);
-	struct bookInfo book = {
-	.id = "issueNo2",
-	.bookTitle = "New Title",
-	.author = "Ayush"
-	};
-	int ret = issueBook("token", book, 123123);
-	printf("%d\n", ret);
-	sleep(10);
-	ret = returnBook("token", "issueNo2");
+	//struct bookInfo book = {
+	//.id = "issueNo2",
+	//.bookTitle = "New Title",
+	//.author = "Ayush"
+	//};
+	//int ret = issueBook("token", book, 123123);
+	//printf("%d\n", ret);
+	//sleep(10);
+	//ret = returnBook("token", "issueNo2");
+	//printf("%d\n", ret);
+	//int ret = issueBookByID("tokentok", "issueNo4");
+	//printf("%d\n", ret);
+	int ret = returnBook("token2", "issueNo4");
 	printf("%d\n", ret);
 }
 
 // ##########################################################################################################################
+
+int issueBookByID(char* token, char* id){
+	struct bookClass* book = (struct bookClass*) malloc(sizeof(struct bookClass));
+	int ret = getBookByID(id, book);
+	if(ret!=0){
+		return ret;
+	}
+	struct bookInfo bookinfo;
+	strcpy(bookinfo.id, book->id);
+	strcpy(bookinfo.bookTitle, book->bookTitle);
+	strcpy(bookinfo.author, book->author);
+	ret = issueBook(token, bookinfo, 1234214);
+	if(ret!= 0){
+		return ret;
+	}
+	free(book);
+	return 0;
+}
+
+int returnIssued(char* token, char* id){
+	return returnBook(token, id);
+}
 
 void newScreen(void (*screen)()){
 	SCREEN = screen;
@@ -942,16 +973,19 @@ int issueBook(char* token, struct bookInfo book, time_t time){
 	}
 	int exists = 0;
 	char line[50];
+	int filesi = 0;
 	struct txtFile* original = (struct txtFile*) malloc(sizeof(struct txtFile));
 	struct txtFile* txtfile = original;
 	struct txtFile* last = txtfile;
 	while(fgets(line, 50, fp)){
+		filesi++;
 		last->next = (struct txtFile*) malloc(sizeof(struct txtFile));
 		strcpy(last->line, line);
 		last = last->next;
 	}
+	last->next = NULL;
 	fp = freopen("Server/issuedBooks.txt", "w", fp);
-	while(txtfile != NULL){
+	for(int i = 0; i<filesi; i++){
 		fputs(txtfile->line, fp);
 		txtfile->line[strlen(txtfile->line)-1] = '\0';
 		if(strcmp(txtfile->line, token)==0){
@@ -985,63 +1019,62 @@ int issueBook(char* token, struct bookInfo book, time_t time){
 		fputs("\n", fp);
 
 	}
-	while(original!=NULL){
+	for(int i = 0; i<filesi; i++){
 		free(original);
 		original = original->next;
 	}
-	fclose(fp);
-	fp = fopen("Server/bookStore.txt", "r");
+	fp = freopen("Server/bookStore.txt", "r", fp);
 	if(fp==NULL){
 		return -2;
 	}
-	original = (struct txtFile*) malloc(sizeof(struct txtFile));
-	txtfile = original;
-	last = txtfile;
+	int filesize=0;
+	struct txtFile* originals = (struct txtFile*) malloc(sizeof(struct txtFile));
+	struct txtFile* txtfiles = originals;
+	struct txtFile* lasts = txtfiles;
 	while(fgets(line, 50, fp)){
-		last->next = (struct txtFile*) malloc(sizeof(struct txtFile));
-		strcpy(last->line, line);
-		last = last->next;
+		lasts->next = (struct txtFile*) malloc(sizeof(struct txtFile));
+		strcpy(lasts->line, line);
+		lasts = lasts->next;
+		filesize++;
 	}
 	fp = freopen("Server/bookStore.txt", "w", fp);
-	int linenum=0;
-	while(txtfile != NULL){
-		if((linenum%5)==0){
-			txtfile->line[strlen(txtfile->line)-1]='\0';
-			fputs(txtfile->line, fp);
-			fputs("\n", fp);
-			if(strcmp(txtfile->line, book.id)==0){
-				txtfile = txtfile->next;
-				fputs(txtfile->line, fp);
-				txtfile = txtfile->next;
-				fputs(txtfile->line, fp);
-				txtfile = txtfile->next;
-				fputs(txtfile->line, fp);
-				txtfile = txtfile->next;
-				int issued = atoi(txtfile->line);
+	fputs(txtfiles->line, fp);
+	for(int i=0; i<filesize; i++){
+
+		if((i%5)==0){
+			txtfiles->line[strlen(txtfiles->line)-1]='\0';
+			if(strcmp(txtfiles->line, book.id)==0){
+				txtfiles = txtfiles->next;
+				fputs(txtfiles->line, fp);
+				txtfiles = txtfiles->next;
+				fputs(txtfiles->line, fp);
+				txtfiles = txtfiles->next;
+				fputs(txtfiles->line, fp);
+				txtfiles = txtfiles->next;
+				int issued = atoi(txtfiles->line);
 				issued++;
-				sprintf(txtfile->line, "%d\n", issued);
-				fputs(txtfile->line, fp);
-				txtfile = txtfile->next;
-				while(txtfile!=NULL){
-					fputs(txtfile->line, fp);
-					txtfile = txtfile->next;
+				sprintf(txtfiles->line, "%d\n", issued);
+				fputs(txtfiles->line, fp);
+				for(int j=i; j<(filesize-5); j++){
+					txtfiles=txtfiles->next;
+					fputs(txtfiles->line, fp);
 				}
 				goto ending;
 			}
-			txtfile = txtfile->next;
-			linenum++;	
+	
 		}
-		fputs(txtfile->line, fp);
-		txtfile = txtfile->next;
-		linenum++;
+		txtfiles = txtfiles->next;	
+		fputs(txtfiles->line, fp);
+
 	}
-ending:	while(original !=NULL){
-		free(original);
-		original = original->next;
+ending:	for(int i=0; i<filesize; i++){
+		free(originals);
+		originals = originals->next;
 	}
 	fclose(fp);
 	return 0;
 }
+
 
 int returnBook(char* token, char* id){
 	FILE* fp;
@@ -1053,16 +1086,18 @@ int returnBook(char* token, char* id){
 	int exists = 0;
 	int try = 0;
 	char line[50];
+	int filesi=0;
 	struct txtFile* original = (struct txtFile*) malloc(sizeof(struct txtFile));
 	struct txtFile* txtfile = original; 
 	struct txtFile* last = txtfile;
 	while(fgets(line, 50, fp)){
+		filesi++;
 		last->next = (struct txtFile*) malloc(sizeof(struct txtFile));
 		strcpy(last->line, line);
 		last = last->next;
 	}
 	fp = freopen("Server/issuedBooks.txt", "w", fp);
-	while(txtfile != NULL){
+	for(int i=0; i<filesi; i++){
 returnL:	fputs(txtfile->line, fp);
 		if(strncmp(txtfile->line, token, strlen(token))==0){
 returnLoop:		txtfile = txtfile->next;
@@ -1070,9 +1105,11 @@ returnLoop:		txtfile = txtfile->next;
 				try++;
 				txtfile->line[strlen(txtfile->line)-1]='\0';
 				if(strcmp(txtfile->line, id)==0){
-					for(int i=0; i<4; i++){
+					for(int j=0; j<4; j++){
 						txtfile = txtfile->next;
+						i++;
 					}
+					i++;
 					success = 1;
 					if((txtfile->line[0]=='\n')&&(try==1)){
 						exists = 1;
@@ -1083,6 +1120,7 @@ returnLoop:		txtfile = txtfile->next;
 				
 					fputs(txtfile->line, fp);
 					fputs("\n", fp);
+					i++;
 					goto returnLoop; 
 				}
 			}else{
@@ -1091,29 +1129,38 @@ returnLoop:		txtfile = txtfile->next;
 		}
 		txtfile = txtfile->next;
 	}
-	free(original);
+	for(int i=0; i<filesi; i++){
+		free(original);
+		original = original->next;
+	}
 	if(exists==1){
 		fp = freopen("Server/issuedBooks.txt", "r", fp);
 		original = (struct txtFile*) malloc(sizeof(struct txtFile));
 		txtfile = original; 
 		last = txtfile;
+		int filesize=0;
 		while(fgets(line, 50, fp)){
+			filesize++;
 			last->next = (struct txtFile*) malloc(sizeof(struct txtFile));
 			strcpy(last->line, line);
 			last = last->next;
 		}
 		fp = freopen("Server/issuedBooks.txt", "w", fp);
-		while(txtfile != NULL){
+		for(int i=0; i<filesize-2; i++){
 			if(strncmp(txtfile->line, token, strlen(token))==0){
 				txtfile = txtfile->next;
+				i++;
 				txtfile = txtfile->next;
+				i++;
 			}
 			fputs(txtfile->line,fp);
 			txtfile = txtfile->next;
 		}
-		free(original);
+		for(int i=0; i<filesize;i++){
+			free(original);
+			original=original->next;
+		}
 	}
-
 	fclose(fp);
 	if(success ==1){
 	fp = fopen("Server/bookStore.txt", "r");
@@ -1162,7 +1209,10 @@ returnLoop:		txtfile = txtfile->next;
 		txtfile = txtfile->next;
 		linenum++;
 	}
-ending:	free(original);
+ending:	while(original!=0){
+		free(original);
+		original=original->next;
+	}
 	fclose(fp);
 	return 0;
 	}
