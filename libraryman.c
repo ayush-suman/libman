@@ -203,7 +203,7 @@ int getAllIssuedBooks(struct bookInfoList* books);
 // Returns the number of books that matched
 int search(char* book, struct bookList* books);
 // Finds the books that are due
-void dueBooks(char* token, struct bookInfoList* books);
+void dueBooks();
 // Returns an issued book to the library
 // Decreases Issued Count by 1 if successfully returned
 // Returns -1 if something went wrong
@@ -223,14 +223,13 @@ void homeScreen();
 void homeScreenAdmin();
 void issuedBookUI();
 void bookStoreUI();
-
+void settingsScreen();
 void searchScreen();
 void searchScreenAdmin();
 
 void loginAsAdminUI();
 
-void loadBooks(struct bookList* books);
-void createDueNotification(struct bookInfoList books);
+void createNotification(int size, struct bookInfoList* books);
 // ##########################################################################################################################
 
 int main(){
@@ -534,20 +533,34 @@ int returnIssued(char* id){
 	return returnBook(token, id);
 }
 
-void dueBooks(char* token, struct bookInfoList* books){
+void dueBooks(){
+	char token[50];
+	int ret = getToken(token);
+	int s = 0;
+	struct bookInfoList* books = (struct bookInfoList*) malloc(sizeof(struct bookInfoList));
+	struct bookInfoList* last = books;
 	int size = getIssuedBookInfo(token, books);
 	time_t t = time(NULL);
-	struct bookInfoList* booklist;
+	struct bookInfoList* booklist = (struct bookInfoList*) malloc(sizeof(struct bookInfoList));
+	struct bookInfoList* head = booklist;
 	for(int i=0; i<size; i++){
-		if((books->time-t)>1296000){
-			booklist->book = books->book;
-			booklist->next = (struct bookInfoList*) malloc(sizeof(struct bookInfoList));
-			booklist = booklist->next;
+		if((t-last->time)>1296000){
+			printf("%ld", (last->time-t));
+			s++;
+			strcpy(head->book.id, last->book.id);
+			strcpy(head->book.bookTitle, last->book.bookTitle);
+			strcpy(head->book.author, last->book.author);
+			head->time = last->time;
+			head->next = (struct bookInfoList*) malloc(sizeof(struct bookInfoList));
+			head = head->next;
 		}
-		books->next;
+		last = last->next;
 	}
-	//createNotification;
-
+	for(int i=0; i<size; i++){
+		free(books);
+		books = books->next;
+	}
+	createNotification(s, booklist);
 }
 
 void newScreen(void (*screen)()){
@@ -612,7 +625,7 @@ void issuedBookUI(){
 		printf("Book Title: %s\n", last->book.bookTitle);
 		printf("Author: %s\n", last->book.author);
 		char* ti = ctime(&(last->time));
-		printf("Date Issued: %s\n\n", ti);
+		printf("Issued at: %s\n\n", ti);
 		last = last->next;
 	}
 	for(int i=0; i<size; i++){
@@ -653,9 +666,60 @@ issoption:	printf("Press 1 to select a book\n");
 
 }
 
+void settingsScreen(){
+	printf("**note: Upcoming feature--password change**\n\n");
+setopt:	printf("Press 1 to delete your account\n");
+	printf("Press 2 to return to the main page\n");
+	char rs[50];
+	scanf("%s", rs);
+	int r = atoi(rs);
+	if(r==1){
+		struct bookInfoList* books = (struct bookInfoList*) malloc(sizeof(struct bookInfoList));
+		int s = getAllIssuedBooks(books);
+		if(s>0){
+			printf("You have not returned few issued books\n");
+			printf("Return all books to successfully delete your membership\n");
+			sleep(4);
+			newScreen(homeScreen);
+			return;
+		}else{
+			int ret = deleteMyAccount(USERNAME);
+			if(ret ==-1){
+				printf("Something went wrong\n");
+				sleep(1);
+				return;
+			}
+			newScreen(welcomeScreen);
+			return;
+		}
+	} else if(r==2){
+	
+	} else {
+		printf("NOT A VALID ENTRY!\nEnter Again:\n");
+		goto setopt;
+	}
+}
+
+void createNotification(int size, struct bookInfoList* books){
+	if(size>0){
+	printf("You have %d books due\n", size);
+	printf("Kindly return the following books to the library\n");
+	for(int i = 0; i<size; i++){
+		printf("%d\n", i+1);
+		printf("Issue No: %s\n", books->book.id);
+		printf("Book Title: %s\n", books->book.bookTitle);
+		printf("Author: %s\n", books->book.author);
+		char* ti = ctime(&(books->time));
+		printf("Issued at: %s\n\n", ti);
+		books = books->next;
+	}
+	}
+}
+
 void homeScreen(){
 	printf("WELCOME %s\n\n", USERNAME);
 	printf("This is your online portal to the library\n");
+	dueBooks();
 homeoption:	printf("Press 1 to search for books\n");
 	printf("Press 2 to view all the available books\n");
 	printf("Press 3 to view books issued by you\n");
