@@ -390,14 +390,19 @@ void searchScreen(){
 	searchText[49]='\0';
 	struct bookList* books = (struct bookList*) malloc(sizeof(struct bookList));
 	int size = search(searchText, books);
+	struct bookList* last = books;
 	for(int i=0; i<size; i++){
 		printf("%d.\n", (i+1));
-		printf("Issue No: %s", books->book.id);
-		printf("Book Title: %s\n", books->book.bookTitle);
-		printf("Author: %s\n", books->book.author);
-		printf("Quanitity: %d\n", books->book.quantity);
-		printf("No of Books Issued: %d\n\n", books->book.issued);
-		books = books->next;
+		printf("Issue No: %s", last->book.id);
+		printf("Book Title: %s\n", last->book.bookTitle);
+		printf("Author: %s\n", last->book.author);
+		printf("Quanitity: %d\n", last->book.quantity);
+		printf("No of Books Issued: %d\n\n", last->book.issued);
+		last = last->next;
+	}
+	for(int i = 0; i<size; i++){
+		free(books);
+		books=books->next;
 	}
 searchoption:	printf("\nPress 1 to search again\n");
 	printf("Press 2 to select a book from the result\n");
@@ -482,6 +487,43 @@ issueoption:				printf("\nPress 1 to issue the book\n");
 	}
 }
 
+void searchScreenAdmin(){
+	printf("Type in your search:\n");
+	char searchText[500];
+	scanf("%s", searchText);
+	searchText[49]='\0';
+	struct bookList* books = (struct bookList*) malloc(sizeof(struct bookList));
+	int size = search(searchText, books);
+	struct bookList* last = books;
+	for(int i=0; i<size; i++){
+		printf("%d.\n", (i+1));
+		printf("Issue No: %s", last->book.id);
+		printf("Book Title: %s\n", last->book.bookTitle);
+		printf("Author: %s\n", last->book.author);
+		printf("Quanitity: %d\n", last->book.quantity);
+		printf("No of Books Issued: %d\n\n", last->book.issued);
+		last = last->next;
+	}
+	for(int i=0;i<size;i++){
+		free(books);
+		books=books->next;
+	}
+searchadminoption:	printf("\nPress 1 to search again\n");
+		printf("Press 2 to go to main page\n");
+		char rs[50];
+		scanf("%s", rs);
+		int r = atoi(rs);
+		if(r==1){
+			return;
+		}else if(r==2){
+			newScreen(homeScreenAdmin);
+		} else{
+			printf("NOT A VALID ENTRY!\nEnter Again:\n");
+			goto searchadminoption;
+		}
+
+}
+
 int returnIssued(char* id){
 	char token[20];
 	int ret = getToken(token);
@@ -560,22 +602,114 @@ homeoption:	printf("Press 1 to search for books\n");
 	printf("Press 2 to view all the available books\n");
 	printf("Press 3 to view books issued by you\n");
 	printf("Press 4 to go to settings page\n");
-	printf("Press 5 to Log Out\n\n");
+	printf("Press 5 to Log Out\n");
+	printf("Press 6 to exit program\n\n");
 	char rs[50];
 	scanf("%s", rs);
 	int r = atoi(rs);
 	if(r==1){
 		newScreen(searchScreen);
 	} else if(r==2){
-		printf("2\n");	
+		struct bookList* books = (struct bookList*) malloc(sizeof(struct bookList));
+		int s = search("", books);
+		struct bookList* last = books;
+		for(int i=0; i<s; i++){
+			printf("Issue No: %s\n", last->book.id);
+			printf("Book Title: %s\n", last->book.bookTitle);
+			printf("Author: %s\n", last->book.author);
+			printf("Quantity: %d\n", last->book.quantity);
+			printf("No of books issued: %d\n", last->book.issued);
+			last = last->next;
+		}
+		for(int i = 0; i<s; i++){
+			free(books);
+			books = books->next;
+		}
+homeop:		printf("\nPress 1 to select a book\n");
+		printf("Press 2 to go to main page\n");
+		char rs[50];
+		scanf("%s", rs);
+		int r = atoi(rs);
+		if(r==1){
+			printf("Enter the Issue No exactly as it is of the book that you want to select:\n");
+			char issue[500];
+			scanf("%s", issue);
+			issue[49]= '\0';
+			struct bookClass* book = (struct bookClass*) malloc(sizeof(struct bookClass));
+			int getb = viewBookByID(issue, book);
+			if(getb==-1){
+				printf("Something went wrong\n");
+				printf("Try Again\n");
+				free(book);
+				goto homeop;
+			} else if(getb==0){
+				if(book->quantity > book->issued){
+					printf("Do you want to issue this book?\n\n");
+					printf("Issue No: %s\n", book->id);
+					printf("Book Title: %s\n", book->bookTitle);
+					printf("Author: %s\n", book->author);
+issuesoption:				printf("\nPress 1 to issue the book\n");
+					printf("Press 2 to go back\n");
+					char ps[50];
+					scanf("%s", ps);
+					int p = atoi(ps);
+					if(p==1){
+						int g = issueBookByID(book->id);
+						if(g==0){
+							printf("Book Issued Successfully\n");
+							sleep(2);
+							free(book);
+							return;
+						} else if(g==-1){
+							printf("Something went Wrong\n");
+							printf("Try Again\n");
+						} else if(g==1){
+							printf("Book Not Availabe\n");
+							printf("Try Again\n");
+						} else if(g==-2){
+							//SystemCrash;
+						} else if(g==2){
+							printf("Book already issued\n");
+						}
+						free(book);
+						sleep(2);
+						goto homeop;
+					} else if(p==2){
+						free(book);
+						goto homeop;
+					} else {
+						printf("NOT A VALID ENTRY!\nEnter Again:\n");
+						goto issuesoption;
+					}
+				} else{
+					printf("Book is not available for now.\n\n");
+					printf("Issue No: %s\n", book->id);
+					printf("Book Title: %s\n", book->bookTitle);
+					printf("Author: %s\n", book->author);
+					sleep(2);
+					free(book);
+					goto homeop;
+				}
+			} else {
+				printf("\nNo such book\n");
+				free(book);
+				goto homeop;
+			}
+		} else if(r==2){
+			return;
+		} else	{
+			printf("NOT A VALID ENTRY!\nEnter Again:\n");
+			goto homeop;
+		}
 	} else if(r==3){
 		printf("3\n");	
 	} else if(r==4){
 		printf("4\n");
 	} else if(r==5){
-		printf("5\n");
 		logout();
 		newScreen(welcomeScreen);	
+	} else if(r==6){
+		exit(0);
 	} else {
 		printf("NOT A VALID ENTRY!\nEnter Again:\n");
 		goto homeoption;
@@ -591,14 +725,40 @@ homeadminoption:	printf("Press 1 to search for books\n");
 	printf("Press 3 to search for users\n");
 	printf("Press 4 to list all the users\n");
 	printf("Press 5 to buy books from vendors\n");
-	printf("Press 6 to Log Out\n\n");
+	printf("Press 6 to Log Out\n");
+	printf("Press 7 to exit the program\n\n");
 	char rs[50];
 	scanf("%s", rs);
 	int r = atoi(rs);
 	if(r==1){
-	
-	} else if(r=2){
-	
+		newScreen(searchScreenAdmin);
+	} else if(r==2){
+		struct bookList* books = (struct bookList*) malloc(sizeof(struct bookList));
+		int s = search("", books);
+		struct bookList* last = books;
+		for(int i=0; i<s; i++){
+			printf("Issue No: %s\n", last->book.id);
+			printf("Book Title: %s\n", last->book.bookTitle);
+			printf("Author: %s\n", last->book.author);
+			printf("Quantity: %d\n", last->book.quantity);
+			printf("No of books issued: %d\n", last->book.issued);
+			last = last->next;
+		}
+		for(int i = 0; i<s; i++){
+			free(books);
+			books = books->next;
+		}
+opti:		printf("Press 1 to go to main page");
+		char inp[50];
+		scanf("%s", inp);
+		int is = atoi(inp); 
+		if(is==1){
+			return;
+		} else {
+			printf("NOT A VALID ENTRY!\nEnter Again:\n")
+			goto opti;
+		}
+
 	} else if(r==3){
 	
 	} else if(r==4){
@@ -606,8 +766,11 @@ homeadminoption:	printf("Press 1 to search for books\n");
 	} else if(r==5){
 	
 	} else if(r==6){
-	
-	} else {
+		logout();
+		newScreen(welcomeScreen);
+	} else if(r==7){
+		exit(0);
+	} else{
 		printf("NOT A VALID ENTRY!\nEnter Again:\n");
 		goto homeadminoption;
 
