@@ -210,11 +210,13 @@ void dueBooks();
 // Returns 0 if book successfully returned
 // Returns 1 if book is not issued
 int returnIssued(char* id);
+int searchUsers(struct users* userlist);
 // ##########################################################################################################################
 
 /*UI Layer*/
 
 void newScreen(void (*screen)());
+
 void splashScreen();
 void welcomeScreen();
 void loginUI();
@@ -226,7 +228,7 @@ void bookStoreUI();
 void settingsScreen();
 void searchScreen();
 void searchScreenAdmin();
-
+void allUsersScreen();
 void loginAsAdminUI();
 
 void createNotification(int size, struct bookInfoList* books);
@@ -293,6 +295,65 @@ int main(){
 
 int viewBookByID(char* id, struct bookClass* book){
 	return getBookByID(id, book);
+}
+
+void allUsersScreen(){
+	struct users* userlist = (struct users*) malloc(sizeof(struct users*));
+	struct users* last = userlist;
+	int size = getAllUsers(userlist);
+	if(size == -1){
+		printf("Something went wrong\n");
+		sleep(1);
+		newScreen(homeScreenAdmin);
+		return;
+	}
+	printf("Following are all the registered memebers of the library\n");
+	for(int i=0;i<size;i++){
+		printf("%s", last->username);
+		last = last->next;
+	}
+uopti:	printf("\nPress 1 to select a user\n");
+	printf("Press 2 to go to the main page\n");
+	char rs[50];
+	char usern[50];
+	scanf("%s", rs);
+	int r = atoi(rs);
+	if(r==1){
+		printf("Enter the username exactly as it to select it");
+		scanf("%s", usern);
+		struct users* l = userlist;
+		for(int i=0; i<size; i++){
+			l->username[strlen(l->username)-1]='\0';
+			int cmp = strcmp(usern, l->username);
+			if(cmp==0){
+				goto userse;
+			}
+			l = l->next;
+		}
+
+	} else if(r==2){
+		newScreen(homeScreenAdmin);
+		return;
+	} else {
+		printf("NOT A VALID ENTRY!\nEnter Again:\n");
+		goto uopti;
+	}
+userse: printf("Press 1 to delete the user %s\n", usern);
+	printf("**note: You might lose books if you remove a member which has not returned the books yet\n");
+	printf("Press 2 to go back\n");
+	char ps[50];
+	scanf("%s", ps);
+	int p = atoi(ps);
+	if(p==1){
+		removeUser(usern);
+		return;
+	} else if(p==2){
+		return;
+	} else {
+		printf("NOT A VALID ENTRY!\nEnter Again:\n");
+		goto userse;
+	}
+
 }
 
 int viewUsers(struct users* userlist){
