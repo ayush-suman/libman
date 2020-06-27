@@ -210,7 +210,7 @@ void dueBooks();
 // Returns 0 if book successfully returned
 // Returns 1 if book is not issued
 int returnIssued(char* id);
-int searchUsers(struct users* userlist);
+int searchUsers(char* suser,struct users* userlist);
 // ##########################################################################################################################
 
 /*UI Layer*/
@@ -375,6 +375,33 @@ int viewUsers(struct users* userlist){
 	}
 	fclose(fp);
 	return size;
+}
+
+int searchUsers(char* suser, struct users* userlist){
+	int ulen = strlen(suser);
+	FILE* fp;
+	fp = fopen("Server/tokenStore.txt", "r");
+	if(fp == NULL){
+		return -1;
+	}
+	struct users* user = userlist;
+	char line[20];
+	int size = 0;
+	while(fgets(line, 20, fp)){
+		int llen = strlen(line);
+		for(int i=0; i<(llen-ulen);i++){
+			int cmp = strncmp(suser, &line[i], ulen);
+			if(cmp==0){
+				size++;
+				strcpy(userlist->username, line);
+				userlist->next = (struct users*) malloc(sizeof(struct users));
+				userlist = userlist->next;
+				break;
+			}
+		}
+	}
+	return size;
+
 }
 
 int getAllUsers(struct users* userlist){
