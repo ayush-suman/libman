@@ -27,7 +27,7 @@
 
 typedef unsigned long long int64;
 static void (*SCREEN)();
-static char* USERNAME;
+static char* USERNAME = "\0";
 
 struct bookClass {
 	char id[50];
@@ -218,11 +218,12 @@ void welcomeScreen();
 void loginUI();
 void registerUI();
 void homeScreen();
+void homeScreenAdmin();
 void issuedBookUI();
 void bookStoreUI();
-
+void searchScreen();
 void loginAsAdminUI();
-
+void searchResult();
 void loadBooks(struct bookList* books);
 void createDueNotification(struct bookInfoList books);
 // ##########################################################################################################################
@@ -248,10 +249,10 @@ int main(){
 	//char* username = (char*) malloc(50 * sizeof(char));
 	//int ret = verifyToken("lJf9SpfllcpnqyAKqy", username);
 	//printf("%d\n%s", ret, username);
-//	newScreen(splashScreen);
-//	for(;;){
-//		loadScreen(SCREEN);
-//	}
+	newScreen(splashScreen);
+	for(;;){
+		loadScreen(SCREEN);
+	}
 	//loadScreen(splashScreen);
 	//struct bookClass *book = (struct bookClass*) malloc(sizeof(struct bookClass));
 	//int ret = getBookByID("issueno", book);
@@ -278,8 +279,10 @@ int main(){
 	//struct users* userslist = (struct users*) malloc(sizeof(struct users*));
 	//int ret = viewUsers(userslist);
 	//printf("%d\n%s", ret, userslist->username);
-	int ret = deleteTokenPermanently("ayushsumanyo");
-	printf("%d\n", ret);
+	//int ret = deleteTokenPermanently("ayushsumanyo");
+	//printf("%d\n", ret);
+	//int ret = registerUser("aush", "abcDef123", "abcDef123");
+	//printf("%d\n", ret);
 }
 
 // ##########################################################################################################################
@@ -389,6 +392,25 @@ int issueBookByID(char* token, char* id){
 	return 0;
 }
 
+void searchScreen(){
+	printf("Type in your search:\n");
+	char searchText[500];
+	scanf("%s", searchText);
+	searchText[49]='\0';
+	struct bookList* books = (struct bookList*) malloc(sizeof(struct bookList));
+	int size = search(searchText, books);
+	for(int i=0; i<size; i++){
+		printf("%d.\n", (i+1));
+		printf("Issue No: %s", books->book.id);
+		printf("Book Title: %s\n", books->book.bookTitle);
+		printf("Author: %s\n", books->book.author);
+		printf("Quanitity: %d\n", books->book.quantity);
+		printf("No of Books Issued: %d\n\n", books->book.issued);
+		books = books->next;
+	}
+	scanf("%s", searchText);
+}
+
 int returnIssued(char* token, char* id){
 	return returnBook(token, id);
 }
@@ -415,7 +437,14 @@ void newScreen(void (*screen)()){
 
 void splashScreen(){
 	printf("WELCOME TO E-LIBRARY PORTAL\n\n");
-	printf("Loading...\n");
+	printf("Loading\n");
+	//sleep(1);
+	printf(".\n");
+	//sleep(1);
+	printf(".\n");
+	//sleep(1);
+	printf(".\n");
+	//sleep(1);
 	USERNAME = getCurrentUser();
 	if(USERNAME == "\0"){
 		newScreen(welcomeScreen);
@@ -428,12 +457,19 @@ void splashScreen(){
 void welcomeScreen(){
 	printf("WELCOME TO E-LIBRARY PORTAL\n\n");
 option:	printf("If you are an old user, Press 1 to Log In\n");
-	printf("If you are a new user, Press 2 to Register\n\n");
-	int r = fgetc(stdin)-'0';
+	printf("If you are a new user, Press 2 to Register\n");
+	printf("If you are the admin, Press 3 to Log In as Admin\n");
+	printf("To exit from the program, Press 4\n\n");
+	int r;
+	scanf("%d", &r);
 	if(r==1){
 		newScreen(loginUI);
 	} else if(r==2){
 		newScreen(registerUI);
+	} else if(r==3){
+		newScreen(loginAsAdminUI);
+	} else if(r==4){
+		exit(0);
 	} else {
 		printf("NOT A VALID ENTRY!\nEnter Again:\n");
 		goto option;
@@ -441,10 +477,95 @@ option:	printf("If you are an old user, Press 1 to Log In\n");
 }
 
 void homeScreen(){
-	printf("HOMESCREEN %s\n", USERNAME);
-	exit(0);
+	printf("WELCOME %s\n\n", USERNAME);
+	printf("This is your online portal to the library\n");
+homeoption:	printf("Press 1 to search for books\n");
+	printf("Press 2 to view all the available books\n");
+	printf("Press 3 to view books issued by you\n");
+	printf("Press 4 to go to settings page\n");
+	printf("Press 5 to Log Out\n\n");
+	int r;
+	scanf("%d", &r);
+	if(r==1){
+		newScreen(searchScreen);
+	} else if(r=2){
+	
+	} else if(r==3){
+	
+	} else if(r==4){
+	
+	} else if(r==5){
+	
+	} else {
+		printf("NOT A VALID ENTRY!\nEnter Again:\n");
+		goto homeoption;
+
+	}
 }
 
+void homeScreenAdmin(){
+	printf("Welcome %s\n", USERNAME);
+	printf("Manage the library through this online portal\n");
+homeadminoption:	printf("Press 1 to search for books\n");
+	printf("Press 2 to view all the books\n");
+	printf("Press 3 to search for users\n");
+	printf("Press 4 to list all the users\n");
+	printf("Press 5 to buy books from vendors\n");
+	printf("Press 6 to Log Out\n\n");
+	int r;
+	scanf("%d", &r);
+	if(r==1){
+	
+	} else if(r=2){
+	
+	} else if(r==3){
+	
+	} else if(r==4){
+	
+	} else if(r==5){
+	
+	} else if(r==6){
+	
+	} else {
+		printf("NOT A VALID ENTRY!\nEnter Again:\n");
+		goto homeadminoption;
+
+	}
+
+}
+
+void loginAsAdminUI(){
+	char username[500];
+	char password[500];
+	printf("\e[1;1H\e[2J");
+	printf("Enter Username:\n");
+	scanf("%s", username);
+	printf("Enter Password:\n");
+	scanf("%s", password);
+	username[49]='\0';
+	password[49]='\0';
+	int ret = loginAsAdmin(username, password);
+	if(ret==0){
+		printf("Logged In\n");
+		printf("\e[1;1H\e[2J");
+		newScreen(homeScreenAdmin);
+	}else{
+		printf("Incorrect username or password\n");
+loginOption:	printf("Press 1 to try again\nPress 2 to return to Welcome page\n");
+		int r=0;
+		scanf("%d", &r);
+		if(r==1){
+			return;	
+		}else if(r==2){
+			newScreen(welcomeScreen);
+		}else{
+			printf("NOT A VALID ENTRY!\nEnter Again:\n");
+			goto loginOption;
+		}
+	}
+
+
+}
 
 void loginUI(){
 	char username[500];
@@ -454,12 +575,12 @@ void loginUI(){
 	scanf("%s", username);
 	printf("Enter Password:\n");
 	scanf("%s", password);
-	username[50]='\0';
-	password[50]='\0';
+	username[49]='\0';
+	password[49]='\0';
 	int ret = login(username, password);
 	if(ret==0){
 		printf("Logged In\n");
-		printf("\e[1;1H\e[2J");
+		sleep(1);
 		newScreen(homeScreen);
 	}else{
 		printf("Incorrect username or password\n");
@@ -478,21 +599,22 @@ loginOption:	printf("Press 1 to try again\nPress 2 to return to Welcome page\n")
 }
 
 void registerUI(){
-	char* username;
-	char* password;
-	char* passwordc;
+	char username[500];
+	char password[500];
+	char passwordc[500];
 enter:	printf("Enter New Username:\n");
 	scanf("%s", username);
 	printf("Enter Password:\n");
 	scanf("%s", password);
 	printf("Enter the password again:\n");
 	scanf("%s", passwordc);
+	username[49]='\0';
+	password[49]='\0';
+	passwordc[49]='\0';
 	int ret = registerUser(username, password, passwordc);
 	if(ret == 0){
-		printf("User successfully registered");
-		printf("Hit ENTER to continue...");
-		char c;
-		scanf("%c", &c);
+		printf("User successfully registered\n");
+		sleep(2);
 		newScreen(welcomeScreen);
 		return;
 
@@ -571,9 +693,9 @@ int verifyToken(char* token, char* username){
 			}
 			if(equals==1){
 				rewind(fp);
-				linenum++;
-				linenum/=3;
-				for(int m=0; m<=linenum;m+=3){
+				linenum--;
+				linenum--;
+				for(int m=0; m<=linenum;m++){
 					fgets(username, 50, fp);
 				}
 				username[strlen(username)-1]='\0';
@@ -699,6 +821,7 @@ int login(char* username, char* password){
 	if(ret != 0){
 		return ret;
 	}
+	strcpy(USERNAME, username);
     	return saveToken(token);
 	
 }
@@ -996,6 +1119,10 @@ int getBookByID(char* id, struct bookClass *book){
 	fclose(fp);
 	return 1;
 
+}
+
+int search(char* book, struct bookList* books){
+	return searchBooks(book, books);
 }
 
 int searchBooks(char* book, struct bookList *books){
