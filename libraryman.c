@@ -189,13 +189,14 @@ int getAllUsers(struct users* userlist);
 // Removes User
 int removeUser(char* username);
 int deleteMyAccount(char* username);
+int viewBookByID(char* id, struct bookClass* book);
 // Issues book if available
 // Increases issue count by 1 if issued successfully
 // Returns -1 if something went wrong
 // Returns 0 if book issued successfully
 // Returns 1 if book not available
 // Returns 2 if book is already issued
-int issueBookByID(char* token, char* id);
+int issueBookByID(char* id);
 // searches the book store for the given keyword
 // Returns -1 if something went wrong
 // Returns the number of books that matched
@@ -207,7 +208,7 @@ void dueBooks(char* token, struct bookInfoList* books);
 // Returns -1 if something went wrong
 // Returns 0 if book successfully returned
 // Returns 1 if book is not issued
-int returnIssued(char* token, char* id);
+int returnIssued(char* id);
 // ##########################################################################################################################
 
 /*UI Layer*/
@@ -221,9 +222,12 @@ void homeScreen();
 void homeScreenAdmin();
 void issuedBookUI();
 void bookStoreUI();
+
 void searchScreen();
+void searchScreenAdmin()
+
 void loginAsAdminUI();
-void searchResult();
+
 void loadBooks(struct bookList* books);
 void createDueNotification(struct bookInfoList books);
 // ##########################################################################################################################
@@ -286,6 +290,11 @@ int main(){
 }
 
 // ##########################################################################################################################
+
+int viewBookByID(char* id, struct bookClass* book){
+	return getBookByID(id, book);
+
+}
 
 int viewUsers(struct users* userlist){
 	FILE* fp;
@@ -408,7 +417,58 @@ void searchScreen(){
 		printf("No of Books Issued: %d\n\n", books->book.issued);
 		books = books->next;
 	}
-	scanf("%s", searchText);
+searchoption:	printf("\n Press 1 to search again\n");
+	printf("Press 2 to select a book from the result\n");
+	printf("Press 3 to go to main page\n");
+	int r;
+	scanf("%d", &r);
+	if(r==1){
+		return;
+	} else if(r==2){
+		printf("Enter the Issue No exactly as it is of the book that you want to select:\n");
+		char issue[500];
+		scanf("%s", issue);
+		issue[49]= '\0';
+		struct bookClass* book = (struct bookClass*) malloc(sizeof(struct bookClass));
+		int getb = viewBookByID(issue, book);
+		if(getb==-1){
+			printf("Something went wrong\n");
+			printf("Try Again\n");
+			free(book);
+			goto searchoption;
+		} else if(r==0){
+			if(book->quantity > book->issued){
+				printf("Do you want to issue this book?\n\n");
+				printf("Issue No: %s\n", book->id);
+				printf("Book Title: %s\n", book->bookTitle);
+				printf("Author: %s\n", book->author);
+issueoption:				printf("\nPress 1 to issue the book\n");
+				printf("Press 2 to go back\n");
+				int p;
+				scanf("%d", &p);
+				if(p==1){
+					
+					int g = issueBookByID(book->id);
+				} else if(p==2){
+					free(book);
+					goto searchoption;
+				} else {
+					printf("NOT A VALID ENTRY!\nEnter Again:\n");
+					goto issueoption;
+				}
+			}
+		} else {
+			printf("\nNo such book\n");
+			free(book);
+			goto searchoption;
+		}
+
+	} else if(r==3){
+		newScreen(homeScreen);
+	} else{
+		printf("NOT A VALID ENTRY!\nEnter Again:\n");
+		goto searchoption;
+	}
 }
 
 int returnIssued(char* token, char* id){
@@ -547,7 +607,6 @@ void loginAsAdminUI(){
 	int ret = loginAsAdmin(username, password);
 	if(ret==0){
 		printf("Logged In\n");
-		printf("\e[1;1H\e[2J");
 		newScreen(homeScreenAdmin);
 	}else{
 		printf("Incorrect username or password\n");
@@ -570,7 +629,6 @@ loginOption:	printf("Press 1 to try again\nPress 2 to return to Welcome page\n")
 void loginUI(){
 	char username[500];
 	char password[500];
-	printf("\e[1;1H\e[2J");
 	printf("Enter Username:\n");
 	scanf("%s", username);
 	printf("Enter Password:\n");
@@ -1284,6 +1342,15 @@ int getIssuedBookInfo(char* token, struct bookInfoList* books){
 	return 0;
 }
 
+int issueBookByID(char* id){
+	char token[20];
+	int ret = getToken(token);
+	if(ret = -1){
+		return -1;
+	}
+	time_t time = time(NULL);
+	int r = getBookByID(token, )
+}
 
 int issueBook(char* token, struct bookInfo book, time_t time){
 	FILE* fp;
