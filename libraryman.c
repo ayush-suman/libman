@@ -228,6 +228,7 @@ void bookStoreUI();
 void settingsScreen();
 void searchScreen();
 void searchScreenAdmin();
+void searchUsersScreen();
 void allUsersScreen();
 void loginAsAdminUI();
 
@@ -304,6 +305,7 @@ void allUsersScreen(){
 	if(size == -1){
 		printf("Something went wrong\n");
 		sleep(1);
+		free(userlist);
 		newScreen(homeScreenAdmin);
 		return;
 	}
@@ -332,6 +334,10 @@ uopti:	printf("\nPress 1 to select a user\n");
 		}
 
 	} else if(r==2){
+		for(int i=0; i<size; i++){
+			free(userlist);
+			userlist = userlist->next;
+		}
 		newScreen(homeScreenAdmin);
 		return;
 	} else {
@@ -402,6 +408,68 @@ int searchUsers(char* suser, struct users* userlist){
 	}
 	return size;
 
+}
+
+void searchUsersScreen(){
+	printf("Type in your search:\n");
+	char userss[50];
+	scanf("%s", userss);
+	struct users* userlist = (struct users*) malloc(sizeof(struct users*));
+	struct users* last = userlist; 
+	int size = searchUsers(userss, userlist);
+	for(int i=0; i<size; i++){
+		printf("%s", last->username);
+		last = last->next;
+	}
+	for(int i=0; i<size;i++){
+		free(userlist);
+		userlist = userlist->next;
+	}
+uoptir:	printf("\nPress 1 to select a user\n");
+	printf("Press 2 to go to the main page\n");
+	char rs[50];
+	char usern[50];
+	scanf("%s", rs);
+	int r = atoi(rs);
+	if(r==1){
+		printf("Enter the username exactly as it to select it");
+		scanf("%s", usern);
+		struct users* l = userlist;
+		for(int i=0; i<size; i++){
+			l->username[strlen(l->username)-1]='\0';
+			int cmp = strcmp(usern, l->username);
+			if(cmp==0){
+				goto userser;
+			}
+			l = l->next;
+		}
+
+	} else if(r==2){
+		for(int i=0; i<size; i++){
+			free(userlist);
+			userlist = userlist->next;
+		}
+		newScreen(homeScreenAdmin);
+		return;
+	} else {
+		printf("NOT A VALID ENTRY!\nEnter Again:\n");
+		goto uoptir;
+	}
+userser: printf("Press 1 to delete the user %s\n", usern);
+	printf("**note: You might lose books if you remove a member which has not returned the books yet\n");
+	printf("Press 2 to go back\n");
+	char ps[50];
+	scanf("%s", ps);
+	int p = atoi(ps);
+	if(p==1){
+		removeUser(usern);
+		return;
+	} else if(p==2){
+		return;
+	} else {
+		printf("NOT A VALID ENTRY!\nEnter Again:\n");
+		goto userser;
+	}
 }
 
 int getAllUsers(struct users* userlist){
@@ -824,7 +892,7 @@ homeoption:	printf("Press 1 to search for books\n");
 	} else if(r==3){
 		newScreen(issuedBookUI);	
 	} else if(r==4){
-		printf("4\n");
+		newScreen(settingsScreen);
 	} else if(r==5){
 		logout();
 		newScreen(welcomeScreen);	
@@ -996,9 +1064,9 @@ homeadminoption:	printf("Press 1 to search for books\n");
 	} else if(r==2){
 		newScreen(bookStoreUIAdmin);
 	} else if(r==3){
-		//newScreen(userSearchScreen);
+		newScreen(searchUsersScreen);
 	} else if(r==4){
-	
+		newScreen(allUsersScreen);
 	} else if(r==5){
 	
 	} else if(r==6){
