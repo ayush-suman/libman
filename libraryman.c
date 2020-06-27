@@ -293,7 +293,6 @@ int main(){
 
 int viewBookByID(char* id, struct bookClass* book){
 	return getBookByID(id, book);
-
 }
 
 int viewUsers(struct users* userlist){
@@ -400,7 +399,7 @@ void searchScreen(){
 		printf("No of Books Issued: %d\n\n", books->book.issued);
 		books = books->next;
 	}
-searchoption:	printf("\n Press 1 to search again\n");
+searchoption:	printf("\nPress 1 to search again\n");
 	printf("Press 2 to select a book from the result\n");
 	printf("Press 3 to go to main page\n");
 	int r;
@@ -419,7 +418,7 @@ searchoption:	printf("\n Press 1 to search again\n");
 			printf("Try Again\n");
 			free(book);
 			goto searchoption;
-		} else if(r==0){
+		} else if(getb==0){
 			if(book->quantity > book->issued){
 				printf("Do you want to issue this book?\n\n");
 				printf("Issue No: %s\n", book->id);
@@ -1368,7 +1367,10 @@ int issueBookByID(char* id){
 	int s = getIssuedBookInfo(token, books);
 	for(int i=0; i<s; i++){
 		if(strcmp(books->book.id, id) == 0){
-			free(books);
+			for(int i=0; i<s;i++){
+				free(list);
+				list = list->next;
+			}	
 			return 2;
 		}
 		books = books->next;
