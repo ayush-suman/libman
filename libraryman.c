@@ -27,7 +27,7 @@
 
 typedef unsigned long long int64;
 static void (*SCREEN)();
-static char* USERNAME = "\0";
+static char USERNAME[20] = "\0";
 
 struct bookClass {
 	char id[50];
@@ -402,8 +402,9 @@ void searchScreen(){
 searchoption:	printf("\nPress 1 to search again\n");
 	printf("Press 2 to select a book from the result\n");
 	printf("Press 3 to go to main page\n");
-	int r;
-	scanf("%d", &r);
+	char rs[50];
+	scanf("%s", rs);
+	int r = atoi(rs);
 	if(r==1){
 		return;
 	} else if(r==2){
@@ -426,8 +427,9 @@ searchoption:	printf("\nPress 1 to search again\n");
 				printf("Author: %s\n", book->author);
 issueoption:				printf("\nPress 1 to issue the book\n");
 				printf("Press 2 to go back\n");
-				int p;
-				scanf("%d", &p);
+				char ps[50];
+				scanf("%s", ps);
+				int p = atoi(ps);
 				if(p==1){
 					int g = issueBookByID(book->id);
 					if(g==0){
@@ -519,8 +521,8 @@ void splashScreen(){
 	//sleep(1);
 	printf(".\n");
 	//sleep(1);
-	USERNAME = getCurrentUser();
-	if(USERNAME == "\0"){
+	strcpy(USERNAME, getCurrentUser());
+	if(USERNAME[0] == '\0'){
 		newScreen(welcomeScreen);
 	}else{
 		newScreen(homeScreen);
@@ -534,8 +536,9 @@ option:	printf("If you are an old user, Press 1 to Log In\n");
 	printf("If you are a new user, Press 2 to Register\n");
 	printf("If you are the admin, Press 3 to Log In as Admin\n");
 	printf("To exit from the program, Press 4\n\n");
-	int r;
-	scanf("%d", &r);
+	char rs[50];
+	scanf("%s", rs);
+	int r = atoi(rs);
 	if(r==1){
 		newScreen(loginUI);
 	} else if(r==2){
@@ -558,18 +561,21 @@ homeoption:	printf("Press 1 to search for books\n");
 	printf("Press 3 to view books issued by you\n");
 	printf("Press 4 to go to settings page\n");
 	printf("Press 5 to Log Out\n\n");
-	int r;
-	scanf("%d", &r);
+	char rs[50];
+	scanf("%s", rs);
+	int r = atoi(rs);
 	if(r==1){
 		newScreen(searchScreen);
-	} else if(r=2){
-	
+	} else if(r==2){
+		printf("2\n");	
 	} else if(r==3){
-	
+		printf("3\n");	
 	} else if(r==4){
-	
+		printf("4\n");
 	} else if(r==5){
-	
+		printf("5\n");
+		logout();
+		newScreen(welcomeScreen);	
 	} else {
 		printf("NOT A VALID ENTRY!\nEnter Again:\n");
 		goto homeoption;
@@ -586,8 +592,9 @@ homeadminoption:	printf("Press 1 to search for books\n");
 	printf("Press 4 to list all the users\n");
 	printf("Press 5 to buy books from vendors\n");
 	printf("Press 6 to Log Out\n\n");
-	int r;
-	scanf("%d", &r);
+	char rs[50];
+	scanf("%s", rs);
+	int r = atoi(rs);
 	if(r==1){
 	
 	} else if(r=2){
@@ -625,8 +632,9 @@ void loginAsAdminUI(){
 	}else{
 		printf("Incorrect username or password\n");
 loginOption:	printf("Press 1 to try again\nPress 2 to return to Welcome page\n");
-		int r=0;
-		scanf("%d", &r);
+		char rs[50];
+		scanf("%s", rs);
+		int r = atoi(rs);
 		if(r==1){
 			return;	
 		}else if(r==2){
@@ -657,8 +665,9 @@ void loginUI(){
 	}else{
 		printf("Incorrect username or password\n");
 loginOption:	printf("Press 1 to try again\nPress 2 to return to Welcome page\n");
-		int r=0;
-		scanf("%d", &r);
+		char rs[50];
+		scanf("%s", rs);
+		int r = atoi(rs);
 		if(r==1){
 			return;	
 		}else if(r==2){
@@ -708,8 +717,9 @@ enter:	printf("Enter New Username:\n");
 		printf("Something Went Wrong!");
 	}
 registerOption:	printf("Press 1 to try again\nPress 2 to return to Welcome page\n");
-		int r=0;
-		scanf("%d", &r);
+		char rs[50];
+		scanf("%s", rs);
+		int r = atoi(rs);
 		if(r==1){
 			return;	
 		}else if(r==2){
@@ -887,8 +897,8 @@ int validatePassword(char* password){
 
 int login(char* username, char* password){
     	int salt = generateSalt(username);
-    	int64 p_hash = generateSaltedHash(password, salt);
-    	char token[50];
+	int64 p_hash = generateSaltedHash(password, salt);
+	char token[50];
     	int ret = verifyCredentials(username, p_hash, token);
 	if(ret != 0){
 		return ret;
