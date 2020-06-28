@@ -231,7 +231,8 @@ void searchScreenAdmin();
 void searchUsersScreen();
 void allUsersScreen();
 void loginAsAdminUI();
-
+void bookMarketUI();
+void systemCrash();
 void createNotification(int size, struct bookInfoList* books);
 // ##########################################################################################################################
 
@@ -606,7 +607,8 @@ issueoption:				printf("\nPress 1 to issue the book\n");
 						printf("Book Not Availabe\n");
 						printf("Try Again\n");
 					} else if(g==-2){
-						//SystemCrash;
+						newScreen(systemCrash);
+						return;
 					} else if(g==2){
 						printf("Book already issued\n");
 					}
@@ -807,7 +809,8 @@ issoption:	printf("Press 1 to select a book\n");
 			printf("Try again\n");
 			goto issoption;
 		} else if(ret == -2){
-			//SystemCrash;
+			newScreen(systemCrash);
+			return;
 		} else {
 			printf("Book returned successfully to the library\n");
 			sleep(2);
@@ -1008,7 +1011,8 @@ issuesoption:				printf("\nPress 1 to issue the book\n");
 							printf("Book Not Availabe\n");
 							printf("Try Again\n");
 						} else if(g==-2){
-							//SystemCrash;
+							newScreen(systemCrash);
+							return;
 						} else if(g==2){
 							printf("Book already issued\n");
 						}
@@ -1068,7 +1072,7 @@ homeadminoption:	printf("Press 1 to search for books\n");
 	} else if(r==4){
 		newScreen(allUsersScreen);
 	} else if(r==5){
-		//newScreen(bookMarketUI);
+		newScreen(bookMarketUI);
 	} else if(r==6){
 		logout();
 		newScreen(welcomeScreen);
@@ -1079,6 +1083,17 @@ homeadminoption:	printf("Press 1 to search for books\n");
 		goto homeadminoption;
 
 	}
+
+}
+
+void systemCrash(){
+	printf("System Crashed due to unexpected failure\n");
+	printf("Kindly restore the Server from the backup folder\n");
+	sleep(4);
+	exit(0);
+}
+
+void bookMarketUI(){
 
 }
 
