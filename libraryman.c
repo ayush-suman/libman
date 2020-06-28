@@ -67,6 +67,17 @@ struct users{
 	struct users* next;
 };
 
+struct bookVendors{
+	char id[50];
+	char bookTitle[50];
+	char author[50];
+	char vendor[50];
+};
+
+struct bookVendorList{
+	struct bookVendors book;
+	struct bookVendorList* next;
+};
 // ##########################################################################################################################
 
 /* Mock Server APIs */
@@ -111,6 +122,8 @@ int issueBook(char* token, struct bookInfo book, time_t time);
 // Returns 0 if book successfully returned
 // Returns 1 if the book NOT found
 int returnBook(char* token, char* id);
+int viewBooksFromMarket(struct bookVendorList* books);
+int viewBookFromMarketByID(char* id, struct bookVendors* book);
 // ##########################################################################################################################
 
 /* Mock Local Database Interactor*/
@@ -211,6 +224,9 @@ void dueBooks();
 // Returns 1 if book is not issued
 int returnIssued(char* id);
 int searchUsers(char* suser,struct users* userlist);
+int getBooksFromMarket(struct bookVendorList* books);
+int getBookFromMarketByID(char* id, struct bookVendors* book);
+int buyBookFromMarket(char* id, char* issueID, int quantity);
 // ##########################################################################################################################
 
 /*UI Layer*/
@@ -295,6 +311,100 @@ int main(){
 
 // ##########################################################################################################################
 
+int buyBooksFromMarket(char* id, char* issueID, int quantity){
+	struct bookClass* book = (struct bookClass*) malloc(sizeof(struct bookClass));
+	int ret = getBookByID(issueID, book);
+	if(ret != 1){
+		return ret;
+	}
+	free(book);
+	struct bookVendors* vbook = (struct bookVendors*) malloc(sizeof(struct bookVendors));
+	int r = viewBookFromMarketByID(id, vbook);
+	if(r==-1){
+		return -1;
+	}
+	if(r==1){
+		return 2;
+	}
+	FILE* fp;
+	fp = fopen("Server/bookStore.txt", "a");
+	if(fp==NULL){
+		return -1;
+	}
+	fputs(issueID, fp);
+	fputs("\n", fp);
+	fputs(vbook->bookTitle, fp);
+	fputs(vbook->author, fp);
+	char quan[50];
+	sprintf(quan, "%d", quantity);
+	fputs(quan, fp);
+	fputs("\n", fp);
+	fputs("0", fp);
+	free(vbook);
+	fclose(fp);
+	return 1;
+}
+
+int viewBookFromMarketByID(char*  id, struct bookVendors* book){
+	FILE* fp;
+	fp = fopen("Server/bookMarket.txt", "r");
+	if(fp==NULL){
+		return -1;
+	}
+	char line[50];
+	int s = 0;
+	int linenum=0;
+	while(fgets(line, 50, fp)){
+		if(linenum%4==0){
+			line[strlen(line)-1] = '\0';
+			if(strcmp(line, id)==0){
+				strcpy(book->id, line);
+				fgets(line, 50, fp);
+				strcpy(book->bookTitle, line);
+				fgets(line, 50, fp);
+				strcpy(book->author, line);
+				fgets(line, 50, fp);
+				strcpy(book->vendor, line);
+				fclose(fp);
+				return 0;
+			}
+		}
+	}
+	return 1;
+}
+
+int getBookFromMarketByID(char* id, struct bookVendors* book){
+	return viewBookFromMarketByID(id, book);
+}
+
+int viewBooksFromMarket(struct bookVendorList* books){
+	FILE* fp;
+	fp = fopen("Server/bookMarket.txt", "r");
+	if(fp==NULL){
+		return -1;
+	}
+	char line[50];
+	int s = 0;
+	while(fgets(line, 50, fp)){
+		s++;
+		strcpy(books->book.id, line);
+		fgets(line, 50, fp);
+		strcpy(books->book.bookTitle, line);
+		fgets(line, 50, fp);
+		strcpy(books->book.author, line);
+		fgets(line, 50, fp);
+		strcpy(books->book.vendor, line);
+		books->next = (struct bookVendorList*) malloc(sizeof(struct bookVendorList));
+		books = books->next;
+	}
+	fclose(fp);
+	return s;
+}
+
+int getBooksFromMarket(struct bookVendorList* books){
+	return viewBooksFromMarket(books);
+}
+	
 int viewBookByID(char* id, struct bookClass* book){
 	return getBookByID(id, book);
 }
@@ -322,7 +432,7 @@ uopti:	printf("\nPress 1 to select a user\n");
 	scanf("%s", rs);
 	int r = atoi(rs);
 	if(r==1){
-		printf("Enter the username exactly as it to select it");
+		printf("Enter the username exactly as it to select it\n");
 		scanf("%s", usern);
 		struct users* l = userlist;
 		for(int i=0; i<size; i++){
@@ -426,7 +536,7 @@ uoptir:	printf("\nPress 1 to select a user\n");
 	scanf("%s", rs);
 	int r = atoi(rs);
 	if(r==1){
-		printf("Enter the username exactly as it to select it");
+		printf("Enter the username exactly as it to select it\n");
 		scanf("%s", usern);
 		struct users* l = userlist;
 		for(int i=0; i<size; i++){
@@ -714,13 +824,13 @@ void newScreen(void (*screen)()){
 void splashScreen(){
 	printf("WELCOME TO E-LIBRARY PORTAL\n\n");
 	printf("Loading\n");
-	//sleep(1);
+	sleep(1);
 	printf(".\n");
-	//sleep(1);
+	sleep(1);
 	printf(".\n");
-	//sleep(1);
+	sleep(1);
 	printf(".\n");
-	//sleep(1);
+	sleep(1);
 	strcpy(USERNAME, getCurrentUser());
 	if(USERNAME[0] == '\0'){
 		newScreen(welcomeScreen);
@@ -1075,7 +1185,68 @@ void systemCrash(){
 }
 
 void bookMarketUI(){
-
+	struct bookVendorList* books = (struct bookVendorList*) malloc(sizeof(struct bookVendorList));
+	struct bookVendorList* last = books;
+	int ret = getBooksFromMarket(books);
+	if(ret == -1){
+	printf("Something went wrong\n");
+	sleep(2);
+	newScreen(homeScreenAdmin);
+	return;
+	}
+	printf("Following are the books available in the market\n\n");
+	for(int i = 0; i<ret; i++){
+		printf("%d\n", i+1);
+		printf("Book ID: %s", last->book.id);
+		printf("Book Title: %s", last->book.bookTitle);
+		printf("Author: %s", last->book.author);
+		printf("Vendor: %s\n", last->book.vendor);
+		last=last->next;
+	}
+venopt:	printf("\nPress 1 to buy a book\n");
+	printf("Press 2 to go to the main page\n");
+	char ps[50];
+	scanf("%s", ps);
+	int p = atoi(ps);
+	if(p==1){
+		printf("\nEnter the id of the book that you want to buy exactly as it is\n");
+		char ide[50];
+		scanf("%s", ide);
+		printf("Enter an issueID that you want to give to the book. Must be unique\n");
+		char issueide[50];
+		scanf("%s", issueide);
+		char quae[50];
+		int qua = 0;
+entquat:	printf("Enter the quantity of book that you want to purchase\n");
+		scanf("%s", quae);
+		qua = atoi(quae);
+		if(qua==0){
+			printf("Not a valid quantity\n");
+			goto entquat;
+		}
+		int getr = buyBooksFromMarket(ide, issueide, qua);
+		if(getr == -1){
+			printf("Something went wrong\n");
+			goto venopt;
+		} else if(getr == 0){
+			printf("Issue ID given already exists\n");
+			goto venopt;
+		} else if(getr == 2){
+			printf("No such book in the market\n");
+			goto venopt;
+		} else {
+			printf("Book purchased successfully!\n");
+			sleep(2);
+			newScreen(homeScreenAdmin);
+			return;
+		}
+	} else if(p==2){
+		newScreen(homeScreenAdmin);
+		return;
+	} else {
+		printf("NOT A VALID ENTRY!\nEnter Again\n");
+		goto venopt;
+	}
 }
 
 void loginAsAdminUI(){
