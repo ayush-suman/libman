@@ -67,6 +67,17 @@ struct users{
 	struct users* next;
 };
 
+struct bookVendors{
+	char id[50];
+	char bookTitle[50];
+	char author[50];
+	char vendor[50];
+};
+
+struct bookVendorList{
+	struct bookVendors book;
+	struct bookVendorList* next;
+};
 // ##########################################################################################################################
 
 /* Mock Server APIs */
@@ -111,6 +122,8 @@ int issueBook(char* token, struct bookInfo book, time_t time);
 // Returns 0 if book successfully returned
 // Returns 1 if the book NOT found
 int returnBook(char* token, char* id);
+int viewBooksFromMarket(struct bookVendorList* books);
+int viewBookFromMarketByID(char* id, struct bookVendors* book);
 // ##########################################################################################################################
 
 /* Mock Local Database Interactor*/
@@ -210,7 +223,10 @@ void dueBooks();
 // Returns 0 if book successfully returned
 // Returns 1 if book is not issued
 int returnIssued(char* id);
-int searchUsers(struct users* userlist);
+int searchUsers(char* suser,struct users* userlist);
+int getBooksFromMarket(struct bookVendorList* books);
+int getBookFromMarketByID(char* id, struct bookVendors* book);
+int buyBookFromMarket(char* id, char* issueID, int quantity);
 // ##########################################################################################################################
 
 /*UI Layer*/
@@ -228,9 +244,11 @@ void bookStoreUI();
 void settingsScreen();
 void searchScreen();
 void searchScreenAdmin();
+void searchUsersScreen();
 void allUsersScreen();
 void loginAsAdminUI();
-
+void bookMarketUI();
+void systemCrash();
 void createNotification(int size, struct bookInfoList* books);
 // ##########################################################################################################################
 
@@ -293,6 +311,100 @@ int main(){
 
 // ##########################################################################################################################
 
+int buyBooksFromMarket(char* id, char* issueID, int quantity){
+	struct bookClass* book = (struct bookClass*) malloc(sizeof(struct bookClass));
+	int ret = getBookByID(issueID, book);
+	if(ret != 1){
+		return ret;
+	}
+	free(book);
+	struct bookVendors* vbook = (struct bookVendors*) malloc(sizeof(struct bookVendors));
+	int r = viewBookFromMarketByID(id, vbook);
+	if(r==-1){
+		return -1;
+	}
+	if(r==1){
+		return 2;
+	}
+	FILE* fp;
+	fp = fopen("Server/bookStore.txt", "a");
+	if(fp==NULL){
+		return -1;
+	}
+	fputs(issueID, fp);
+	fputs("\n", fp);
+	fputs(vbook->bookTitle, fp);
+	fputs(vbook->author, fp);
+	char quan[50];
+	sprintf(quan, "%d", quantity);
+	fputs(quan, fp);
+	fputs("\n", fp);
+	fputs("0", fp);
+	free(vbook);
+	fclose(fp);
+	return 1;
+}
+
+int viewBookFromMarketByID(char*  id, struct bookVendors* book){
+	FILE* fp;
+	fp = fopen("Server/bookMarket.txt", "r");
+	if(fp==NULL){
+		return -1;
+	}
+	char line[50];
+	int s = 0;
+	int linenum=0;
+	while(fgets(line, 50, fp)){
+		if(linenum%4==0){
+			line[strlen(line)-1] = '\0';
+			if(strcmp(line, id)==0){
+				strcpy(book->id, line);
+				fgets(line, 50, fp);
+				strcpy(book->bookTitle, line);
+				fgets(line, 50, fp);
+				strcpy(book->author, line);
+				fgets(line, 50, fp);
+				strcpy(book->vendor, line);
+				fclose(fp);
+				return 0;
+			}
+		}
+	}
+	return 1;
+}
+
+int getBookFromMarketByID(char* id, struct bookVendors* book){
+	return viewBookFromMarketByID(id, book);
+}
+
+int viewBooksFromMarket(struct bookVendorList* books){
+	FILE* fp;
+	fp = fopen("Server/bookMarket.txt", "r");
+	if(fp==NULL){
+		return -1;
+	}
+	char line[50];
+	int s = 0;
+	while(fgets(line, 50, fp)){
+		s++;
+		strcpy(books->book.id, line);
+		fgets(line, 50, fp);
+		strcpy(books->book.bookTitle, line);
+		fgets(line, 50, fp);
+		strcpy(books->book.author, line);
+		fgets(line, 50, fp);
+		strcpy(books->book.vendor, line);
+		books->next = (struct bookVendorList*) malloc(sizeof(struct bookVendorList));
+		books = books->next;
+	}
+	fclose(fp);
+	return s;
+}
+
+int getBooksFromMarket(struct bookVendorList* books){
+	return viewBooksFromMarket(books);
+}
+	
 int viewBookByID(char* id, struct bookClass* book){
 	return getBookByID(id, book);
 }
@@ -304,6 +416,7 @@ void allUsersScreen(){
 	if(size == -1){
 		printf("Something went wrong\n");
 		sleep(1);
+		free(userlist);
 		newScreen(homeScreenAdmin);
 		return;
 	}
@@ -319,7 +432,7 @@ uopti:	printf("\nPress 1 to select a user\n");
 	scanf("%s", rs);
 	int r = atoi(rs);
 	if(r==1){
-		printf("Enter the username exactly as it to select it");
+		printf("Enter the username exactly as it to select it\n");
 		scanf("%s", usern);
 		struct users* l = userlist;
 		for(int i=0; i<size; i++){
@@ -377,6 +490,90 @@ int viewUsers(struct users* userlist){
 	return size;
 }
 
+int searchUsers(char* suser, struct users* userlist){
+	int ulen = strlen(suser);
+	FILE* fp;
+	fp = fopen("Server/tokenStore.txt", "r");
+	if(fp == NULL){
+		return -1;
+	}
+	struct users* user = userlist;
+	char line[20];
+	int size = 0;
+	while(fgets(line, 20, fp)){
+		int llen = strlen(line);
+		for(int i=0; i<(llen-ulen);i++){
+			int cmp = strncmp(suser, &line[i], ulen);
+			if(cmp==0){
+				size++;
+				strcpy(userlist->username, line);
+				userlist->next = (struct users*) malloc(sizeof(struct users));
+				userlist = userlist->next;
+				break;
+			}
+		}
+	}
+	return size;
+
+}
+
+void searchUsersScreen(){
+	printf("Type in your search:\n");
+	char userss[50];
+	scanf("%s", userss);
+	struct users* userlist = (struct users*) malloc(sizeof(struct users*));
+	struct users* last = userlist; 
+	int size = searchUsers(userss, userlist);
+	for(int i=0; i<size; i++){
+		printf("%s", last->username);
+		last = last->next;
+	}
+uoptir:	printf("\nPress 1 to select a user\n");
+	printf("Press 2 to search again\n");
+	printf("Press 3 to go to the main page\n");
+	char rs[50];
+	char usern[50];
+	scanf("%s", rs);
+	int r = atoi(rs);
+	if(r==1){
+		printf("Enter the username exactly as it to select it\n");
+		scanf("%s", usern);
+		struct users* l = userlist;
+		for(int i=0; i<size; i++){
+			l->username[strlen(l->username)-1]='\0';
+			int cmp = strcmp(usern, l->username);
+			if(cmp==0){
+				goto userser;
+			}
+			l = l->next;
+		}
+
+	} else if(r==2){
+		return;
+	} else if(r==3){
+		newScreen(homeScreenAdmin);
+		return;
+	}else{
+		printf("NOT A VALID ENTRY!\nEnter Again:\n");
+		goto uoptir;
+	}
+userser: printf("Press 1 to delete the user %s\n", usern);
+	printf("**note: You might lose books if you remove a member which has not returned the books yet\n");
+	printf("Press 2 to go back\n");
+	char ps[50];
+	scanf("%s", ps);
+	int p = atoi(ps);
+	if(p==1){
+		removeUser(usern);
+		return;
+	} else if(p==2){
+		return;
+	} else {
+		printf("NOT A VALID ENTRY!\nEnter Again:\n");
+		goto userser;
+	}
+}
+
 int getAllUsers(struct users* userlist){
 	return viewUsers(userlist);	
 }
@@ -413,17 +610,19 @@ int deleteTokenPermanently(char* username){
 	}
 	fp = freopen("Server/tokenStore.txt", "w", fp);
 	for(int i=0; i<filesize;i++){
+		if(i!=0){fputs("\n", fp);}
+
 		txtfile->line[strlen(txtfile->line)-1]='\0';
 		if(strcmp(txtfile->line, username)==0){
 			for(int j=0; j<3; j++){
 				i++;
 				txtfile = txtfile->next;
 			}
+		i++;
 		txtfile->line[strlen(txtfile->line)-1]='\0';
 		}
 		fputs(txtfile->line, fp);
-		fputs("\n", fp);
-		txtfile = txtfile->next;
+				txtfile = txtfile->next;
 	}
 	for(int i=0; i<filesize; i++){
 		free(original);
@@ -461,10 +660,6 @@ void searchScreen(){
 		printf("No of Books Issued: %d\n\n", last->book.issued);
 		last = last->next;
 	}
-	for(int i = 0; i<size; i++){
-		free(books);
-		books=books->next;
-	}
 searchoption:	printf("\nPress 1 to search again\n");
 	printf("Press 2 to select a book from the result\n");
 	printf("Press 3 to go to main page\n");
@@ -480,6 +675,7 @@ searchoption:	printf("\nPress 1 to search again\n");
 		issue[49]= '\0';
 		struct bookClass* book = (struct bookClass*) malloc(sizeof(struct bookClass));
 		int getb = viewBookByID(issue, book);
+		printf("%d\n", getb);
 		if(getb==-1){
 			printf("Something went wrong\n");
 			printf("Try Again\n");
@@ -511,7 +707,8 @@ issueoption:				printf("\nPress 1 to issue the book\n");
 						printf("Book Not Availabe\n");
 						printf("Try Again\n");
 					} else if(g==-2){
-						//SystemCrash;
+						newScreen(systemCrash);
+						return;
 					} else if(g==2){
 						printf("Book already issued\n");
 					}
@@ -564,10 +761,6 @@ void searchScreenAdmin(){
 		printf("Quanitity: %d\n", last->book.quantity);
 		printf("No of Books Issued: %d\n\n", last->book.issued);
 		last = last->next;
-	}
-	for(int i=0;i<size;i++){
-		free(books);
-		books=books->next;
 	}
 searchadminoption:	printf("\nPress 1 to search again\n");
 		printf("Press 2 to go to main page\n");
@@ -631,13 +824,13 @@ void newScreen(void (*screen)()){
 void splashScreen(){
 	printf("WELCOME TO E-LIBRARY PORTAL\n\n");
 	printf("Loading\n");
-	//sleep(1);
+	sleep(1);
 	printf(".\n");
-	//sleep(1);
+	sleep(1);
 	printf(".\n");
-	//sleep(1);
+	sleep(1);
 	printf(".\n");
-	//sleep(1);
+	sleep(1);
 	strcpy(USERNAME, getCurrentUser());
 	if(USERNAME[0] == '\0'){
 		newScreen(welcomeScreen);
@@ -712,7 +905,8 @@ issoption:	printf("Press 1 to select a book\n");
 			printf("Try again\n");
 			goto issoption;
 		} else if(ret == -2){
-			//SystemCrash;
+			newScreen(systemCrash);
+			return;
 		} else {
 			printf("Book returned successfully to the library\n");
 			sleep(2);
@@ -797,7 +991,7 @@ homeoption:	printf("Press 1 to search for books\n");
 	} else if(r==3){
 		newScreen(issuedBookUI);	
 	} else if(r==4){
-		printf("4\n");
+		newScreen(settingsScreen);
 	} else if(r==5){
 		logout();
 		newScreen(welcomeScreen);	
@@ -816,16 +1010,12 @@ void bookStoreUIAdmin(){
 		struct bookList* last = books;
 		for(int i=0; i<s; i++){
 			printf("%d\n", i+1);
-			printf("Issue No: %s\n", last->book.id);
+			printf("Issue No: %s", last->book.id);
 			printf("Book Title: %s\n", last->book.bookTitle);
 			printf("Author: %s\n", last->book.author);
 			printf("Quantity: %d\n", last->book.quantity);
 			printf("No of books issued: %d\n\n", last->book.issued);
 			last = last->next;
-		}
-		for(int i = 0; i<s; i++){
-			free(books);
-			books = books->next;
 		}
 		if(s==-1){
 			printf("Something went wrong\n");
@@ -838,6 +1028,7 @@ opti:		printf("Press 1 to go to main page");
 		scanf("%s", inp);
 		int is = atoi(inp); 
 		if(is==1){
+			newScreen(homeScreenAdmin);
 			return;
 		} else {
 			printf("NOT A VALID ENTRY!\nEnter Again:\n");
@@ -853,17 +1044,14 @@ void bookStoreUI(){
 		struct bookList* last = books;
 		for(int i=0; i<s; i++){
 			printf("%d\n", i+1);
-			printf("Issue No: %s\n", last->book.id);
+			printf("Issue No: %s", last->book.id);
 			printf("Book Title: %s\n", last->book.bookTitle);
 			printf("Author: %s\n", last->book.author);
 			printf("Quantity: %d\n", last->book.quantity);
 			printf("No of books issued: %d\n\n", last->book.issued);
 			last = last->next;
 		}
-		for(int i = 0; i<s; i++){
-			free(books);
-			books = books->next;
-		}
+
 		if(s==-1){
 			printf("Something went wrong\n");
 			sleep(2);
@@ -913,7 +1101,9 @@ issuesoption:				printf("\nPress 1 to issue the book\n");
 							printf("Book Not Availabe\n");
 							printf("Try Again\n");
 						} else if(g==-2){
-							//SystemCrash;
+							newScreen(systemCrash);
+							return;
+							return;
 						} else if(g==2){
 							printf("Book already issued\n");
 						}
@@ -969,11 +1159,11 @@ homeadminoption:	printf("Press 1 to search for books\n");
 	} else if(r==2){
 		newScreen(bookStoreUIAdmin);
 	} else if(r==3){
-		//newScreen(userSearchScreen);
+		newScreen(searchUsersScreen);
 	} else if(r==4){
-	
+		newScreen(allUsersScreen);
 	} else if(r==5){
-	
+		newScreen(bookMarketUI);
 	} else if(r==6){
 		logout();
 		newScreen(welcomeScreen);
@@ -987,10 +1177,81 @@ homeadminoption:	printf("Press 1 to search for books\n");
 
 }
 
+void systemCrash(){
+	printf("System Crashed due to unexpected failure\n");
+	printf("Kindly restore the Server from the backup folder\n");
+	sleep(4);
+	exit(0);
+}
+
+void bookMarketUI(){
+	struct bookVendorList* books = (struct bookVendorList*) malloc(sizeof(struct bookVendorList));
+	struct bookVendorList* last = books;
+	int ret = getBooksFromMarket(books);
+	if(ret == -1){
+	printf("Something went wrong\n");
+	sleep(2);
+	newScreen(homeScreenAdmin);
+	return;
+	}
+	printf("Following are the books available in the market\n\n");
+	for(int i = 0; i<ret; i++){
+		printf("%d\n", i+1);
+		printf("Book ID: %s", last->book.id);
+		printf("Book Title: %s", last->book.bookTitle);
+		printf("Author: %s", last->book.author);
+		printf("Vendor: %s\n", last->book.vendor);
+		last=last->next;
+	}
+venopt:	printf("\nPress 1 to buy a book\n");
+	printf("Press 2 to go to the main page\n");
+	char ps[50];
+	scanf("%s", ps);
+	int p = atoi(ps);
+	if(p==1){
+		printf("\nEnter the id of the book that you want to buy exactly as it is\n");
+		char ide[50];
+		scanf("%s", ide);
+		printf("Enter an issueID that you want to give to the book. Must be unique\n");
+		char issueide[50];
+		scanf("%s", issueide);
+		char quae[50];
+		int qua = 0;
+entquat:	printf("Enter the quantity of book that you want to purchase\n");
+		scanf("%s", quae);
+		qua = atoi(quae);
+		if(qua==0){
+			printf("Not a valid quantity\n");
+			goto entquat;
+		}
+		int getr = buyBooksFromMarket(ide, issueide, qua);
+		if(getr == -1){
+			printf("Something went wrong\n");
+			goto venopt;
+		} else if(getr == 0){
+			printf("Issue ID given already exists\n");
+			goto venopt;
+		} else if(getr == 2){
+			printf("No such book in the market\n");
+			goto venopt;
+		} else {
+			printf("Book purchased successfully!\n");
+			sleep(2);
+			newScreen(homeScreenAdmin);
+			return;
+		}
+	} else if(p==2){
+		newScreen(homeScreenAdmin);
+		return;
+	} else {
+		printf("NOT A VALID ENTRY!\nEnter Again\n");
+		goto venopt;
+	}
+}
+
 void loginAsAdminUI(){
 	char username[500];
 	char password[500];
-	printf("\e[1;1H\e[2J");
 	printf("Enter Username:\n");
 	scanf("%s", username);
 	printf("Enter Password:\n");
@@ -1115,6 +1376,7 @@ char* getCurrentUser(){
 	if(ret==0){
 		return username;
 	} else {
+		deleteToken();
 		return "\0";
 	}
 }
@@ -1752,7 +2014,7 @@ int getIssuedBookInfo(char* token, struct bookInfoList* books){
 int issueBookByID(char* id){
 	char token[20];
 	int ret = getToken(token);
-	if(ret = -1){
+	if(ret == -1){
 		return -1;
 	}
 	struct bookInfoList* books = (struct bookInfoList*) malloc(sizeof(struct bookInfoList));
@@ -1987,21 +2249,21 @@ returnLoop:		txtfile = txtfile->next;
 	if(fp==NULL){
 		return -2;
 	}
+	int fils=0;
 	original = (struct txtFile*) malloc(sizeof(struct txtFile));
 	txtfile = original;
 	last = txtfile;
 	while(fgets(line, 50, fp)){
+		fils++;
 		last->next = (struct txtFile*) malloc(sizeof(struct txtFile));
 		strcpy(last->line, line);
 		last = last->next;
 	}
 	fp = freopen("Server/bookStore.txt", "w", fp);
-	int linenum=0;
-	while(txtfile != NULL){
-		if((linenum%5)==0){
+	fputs(txtfile->line, fp);
+	for(int i=0; i<fils; i++){
+		if((i%5)==0){
 			txtfile->line[strlen(txtfile->line)-1]='\0';
-			fputs(txtfile->line, fp);
-			fputs("\n", fp);
 			if(strcmp(txtfile->line, id)==0){
 				txtfile = txtfile->next;
 				fputs(txtfile->line, fp);
@@ -2014,26 +2276,22 @@ returnLoop:		txtfile = txtfile->next;
 				issued--;
 				sprintf(txtfile->line, "%d\n", issued);
 				fputs(txtfile->line, fp);
-				txtfile = txtfile->next;
-				while(txtfile!=NULL){
+				for(int j=i; j<(fils-5); j++){
+					txtfile=txtfile->next;
 					fputs(txtfile->line, fp);
-					txtfile = txtfile->next;
 				}
 				goto ending;
 			}
-			txtfile = txtfile->next;
-			linenum++;
-			
+	
 		}
+		txtfile = txtfile->next;	
 		fputs(txtfile->line, fp);
-		txtfile = txtfile->next;
-		linenum++;
+
 	}
-ending:	while(original!=0){
+ending:	for(int i=0; i<fils; i++){
 		free(original);
-		original=original->next;
-	}
-	fclose(fp);
+		original = original->next;
+	}	fclose(fp);
 	}
 	return match;
 
