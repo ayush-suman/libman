@@ -335,10 +335,6 @@ uopti:	printf("\nPress 1 to select a user\n");
 		}
 
 	} else if(r==2){
-		for(int i=0; i<size; i++){
-			free(userlist);
-			userlist = userlist->next;
-		}
 		newScreen(homeScreenAdmin);
 		return;
 	} else {
@@ -422,12 +418,9 @@ void searchUsersScreen(){
 		printf("%s", last->username);
 		last = last->next;
 	}
-	for(int i=0; i<size;i++){
-		free(userlist);
-		userlist = userlist->next;
-	}
 uoptir:	printf("\nPress 1 to select a user\n");
-	printf("Press 2 to go to the main page\n");
+	printf("Press 2 to search again\n");
+	printf("Press 3 to go to the main page\n");
 	char rs[50];
 	char usern[50];
 	scanf("%s", rs);
@@ -446,13 +439,11 @@ uoptir:	printf("\nPress 1 to select a user\n");
 		}
 
 	} else if(r==2){
-		for(int i=0; i<size; i++){
-			free(userlist);
-			userlist = userlist->next;
-		}
+		return;
+	} else if(r==3){
 		newScreen(homeScreenAdmin);
 		return;
-	} else {
+	}else{
 		printf("NOT A VALID ENTRY!\nEnter Again:\n");
 		goto uoptir;
 	}
@@ -509,17 +500,19 @@ int deleteTokenPermanently(char* username){
 	}
 	fp = freopen("Server/tokenStore.txt", "w", fp);
 	for(int i=0; i<filesize;i++){
+		if(i!=0){fputs("\n", fp);}
+
 		txtfile->line[strlen(txtfile->line)-1]='\0';
 		if(strcmp(txtfile->line, username)==0){
 			for(int j=0; j<3; j++){
 				i++;
 				txtfile = txtfile->next;
 			}
+		i++;
 		txtfile->line[strlen(txtfile->line)-1]='\0';
 		}
 		fputs(txtfile->line, fp);
-		fputs("\n", fp);
-		txtfile = txtfile->next;
+				txtfile = txtfile->next;
 	}
 	for(int i=0; i<filesize; i++){
 		free(original);
@@ -557,10 +550,6 @@ void searchScreen(){
 		printf("No of Books Issued: %d\n\n", last->book.issued);
 		last = last->next;
 	}
-	for(int i = 0; i<size; i++){
-		free(books);
-		books=books->next;
-	}
 searchoption:	printf("\nPress 1 to search again\n");
 	printf("Press 2 to select a book from the result\n");
 	printf("Press 3 to go to main page\n");
@@ -576,6 +565,7 @@ searchoption:	printf("\nPress 1 to search again\n");
 		issue[49]= '\0';
 		struct bookClass* book = (struct bookClass*) malloc(sizeof(struct bookClass));
 		int getb = viewBookByID(issue, book);
+		printf("%d\n", getb);
 		if(getb==-1){
 			printf("Something went wrong\n");
 			printf("Try Again\n");
@@ -661,10 +651,6 @@ void searchScreenAdmin(){
 		printf("Quanitity: %d\n", last->book.quantity);
 		printf("No of Books Issued: %d\n\n", last->book.issued);
 		last = last->next;
-	}
-	for(int i=0;i<size;i++){
-		free(books);
-		books=books->next;
 	}
 searchadminoption:	printf("\nPress 1 to search again\n");
 		printf("Press 2 to go to main page\n");
@@ -914,16 +900,12 @@ void bookStoreUIAdmin(){
 		struct bookList* last = books;
 		for(int i=0; i<s; i++){
 			printf("%d\n", i+1);
-			printf("Issue No: %s\n", last->book.id);
+			printf("Issue No: %s", last->book.id);
 			printf("Book Title: %s\n", last->book.bookTitle);
 			printf("Author: %s\n", last->book.author);
 			printf("Quantity: %d\n", last->book.quantity);
 			printf("No of books issued: %d\n\n", last->book.issued);
 			last = last->next;
-		}
-		for(int i = 0; i<s; i++){
-			free(books);
-			books = books->next;
 		}
 		if(s==-1){
 			printf("Something went wrong\n");
@@ -936,6 +918,7 @@ opti:		printf("Press 1 to go to main page");
 		scanf("%s", inp);
 		int is = atoi(inp); 
 		if(is==1){
+			newScreen(homeScreenAdmin);
 			return;
 		} else {
 			printf("NOT A VALID ENTRY!\nEnter Again:\n");
@@ -951,17 +934,14 @@ void bookStoreUI(){
 		struct bookList* last = books;
 		for(int i=0; i<s; i++){
 			printf("%d\n", i+1);
-			printf("Issue No: %s\n", last->book.id);
+			printf("Issue No: %s", last->book.id);
 			printf("Book Title: %s\n", last->book.bookTitle);
 			printf("Author: %s\n", last->book.author);
 			printf("Quantity: %d\n", last->book.quantity);
 			printf("No of books issued: %d\n\n", last->book.issued);
 			last = last->next;
 		}
-		for(int i = 0; i<s; i++){
-			free(books);
-			books = books->next;
-		}
+
 		if(s==-1){
 			printf("Something went wrong\n");
 			sleep(2);
@@ -1012,6 +992,7 @@ issuesoption:				printf("\nPress 1 to issue the book\n");
 							printf("Try Again\n");
 						} else if(g==-2){
 							newScreen(systemCrash);
+							return;
 							return;
 						} else if(g==2){
 							printf("Book already issued\n");
@@ -1100,7 +1081,6 @@ void bookMarketUI(){
 void loginAsAdminUI(){
 	char username[500];
 	char password[500];
-	printf("\e[1;1H\e[2J");
 	printf("Enter Username:\n");
 	scanf("%s", username);
 	printf("Enter Password:\n");
@@ -1225,6 +1205,7 @@ char* getCurrentUser(){
 	if(ret==0){
 		return username;
 	} else {
+		deleteToken();
 		return "\0";
 	}
 }
@@ -1862,7 +1843,7 @@ int getIssuedBookInfo(char* token, struct bookInfoList* books){
 int issueBookByID(char* id){
 	char token[20];
 	int ret = getToken(token);
-	if(ret = -1){
+	if(ret == -1){
 		return -1;
 	}
 	struct bookInfoList* books = (struct bookInfoList*) malloc(sizeof(struct bookInfoList));
@@ -2097,21 +2078,21 @@ returnLoop:		txtfile = txtfile->next;
 	if(fp==NULL){
 		return -2;
 	}
+	int fils=0;
 	original = (struct txtFile*) malloc(sizeof(struct txtFile));
 	txtfile = original;
 	last = txtfile;
 	while(fgets(line, 50, fp)){
+		fils++;
 		last->next = (struct txtFile*) malloc(sizeof(struct txtFile));
 		strcpy(last->line, line);
 		last = last->next;
 	}
 	fp = freopen("Server/bookStore.txt", "w", fp);
-	int linenum=0;
-	while(txtfile != NULL){
-		if((linenum%5)==0){
+	fputs(txtfile->line, fp);
+	for(int i=0; i<fils; i++){
+		if((i%5)==0){
 			txtfile->line[strlen(txtfile->line)-1]='\0';
-			fputs(txtfile->line, fp);
-			fputs("\n", fp);
 			if(strcmp(txtfile->line, id)==0){
 				txtfile = txtfile->next;
 				fputs(txtfile->line, fp);
@@ -2124,26 +2105,22 @@ returnLoop:		txtfile = txtfile->next;
 				issued--;
 				sprintf(txtfile->line, "%d\n", issued);
 				fputs(txtfile->line, fp);
-				txtfile = txtfile->next;
-				while(txtfile!=NULL){
+				for(int j=i; j<(fils-5); j++){
+					txtfile=txtfile->next;
 					fputs(txtfile->line, fp);
-					txtfile = txtfile->next;
 				}
 				goto ending;
 			}
-			txtfile = txtfile->next;
-			linenum++;
-			
+	
 		}
+		txtfile = txtfile->next;	
 		fputs(txtfile->line, fp);
-		txtfile = txtfile->next;
-		linenum++;
+
 	}
-ending:	while(original!=0){
+ending:	for(int i=0; i<fils; i++){
 		free(original);
-		original=original->next;
-	}
-	fclose(fp);
+		original = original->next;
+	}	fclose(fp);
 	}
 	return match;
 
