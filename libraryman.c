@@ -30,9 +30,10 @@ static void (*SCREEN)();
 static char USERNAME[20] = "\0";
 
 struct bookClass {
-	char id[50];
-	char bookTitle[50];
-	char author[50];
+	// Changed 50 to 150 to create a PR
+	char id[150];
+	char bookTitle[150];
+	char author[150];
 	int quantity;
 	int issued;
 };
