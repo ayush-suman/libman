@@ -323,7 +323,7 @@ int buyBooksFromMarket(char* id, char* issueID, int quantity){
 	if(r==-1){
 		return -1;
 	}
-	if(r==1){
+	else if(r==1){
 		return 2;
 	}
 	FILE* fp;
