@@ -276,6 +276,7 @@ int main(){
 	//printf("%d\n%s", ret, username);
 	newScreen(splashScreen);
 	for(;;){
+		int i = 0;
 		loadScreen(SCREEN);
 	}
 	//loadScreen(splashScreen);
