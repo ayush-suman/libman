@@ -280,6 +280,7 @@ int main()
 	for (;;)
 	{
 		int i = 0;
+		int b = 0;
 		loadScreen(SCREEN);
 	}
 	// loadScreen(splashScreen);
