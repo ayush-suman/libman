@@ -274,6 +274,7 @@ int main(){
 	//char* username = (char*) malloc(50 * sizeof(char));
 	//int ret = verifyToken("lJf9SpfllcpnqyAKqy", username);
 	//printf("%d\n%s", ret, username);
+	int b = 0;
 	newScreen(splashScreen);
 	for(;;){
 		loadScreen(SCREEN);
