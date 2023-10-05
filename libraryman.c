@@ -254,6 +254,7 @@ void systemCrash();
 void createNotification(int size, struct bookInfoList *books);
 // ##########################################################################################################################
 int a = 1;
+int b = 2;
 int main()
 {
 	// printf("%llu", generateSaltedHash("zzzzzyAzzzzzzzz", generateSalt("heelo")));
