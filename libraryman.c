@@ -201,6 +201,7 @@ char *getCurrentUser();
 int registerUser(char *username, char *password, char *passwordc);
 // Returns the size of user and userlist
 int getAllUsers(struct users *userlist);
+int z=3;
 // Removes User
 int removeUser(char *username);
 int deleteMyAccount(char *username);
@@ -253,7 +254,11 @@ void bookMarketUI();
 void systemCrash();
 void createNotification(int size, struct bookInfoList *books);
 // ##########################################################################################################################
-
+int a = 1;
+int b = 2;
+int c = 3;
+int d = 5;
+int e = 6;
 int main()
 {
 	// printf("%llu", generateSaltedHash("zzzzzyAzzzzzzzz", generateSalt("heelo")));
@@ -284,6 +289,7 @@ int main()
 		int c = 0;
 		int d = 0;
 		int e = 0;
+		int l = 5;
 		loadScreen(SCREEN);
 	}
 	// loadScreen(splashScreen);
