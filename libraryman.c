@@ -290,6 +290,7 @@ int main()
 		int c = 0;
 		int d = 0;
 		int e = 0;
+		int m = 0;
 		loadScreen(SCREEN);
 	}
 	// loadScreen(splashScreen);
