@@ -201,6 +201,7 @@ char *getCurrentUser();
 int registerUser(char *username, char *password, char *passwordc);
 // Returns the size of user and userlist
 int getAllUsers(struct users *userlist);
+int z=3;
 // Removes User
 int removeUser(char *username);
 int deleteMyAccount(char *username);
