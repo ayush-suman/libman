@@ -257,6 +257,7 @@ int a = 1;
 int b = 2;
 int c = 3;
 int d = 5;
+int e = 6;
 int main()
 {
 	// printf("%llu", generateSaltedHash("zzzzzyAzzzzzzzz", generateSalt("heelo")));
