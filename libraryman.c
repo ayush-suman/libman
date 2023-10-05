@@ -289,6 +289,7 @@ int main()
 		int c = 0;
 		int d = 0;
 		int e = 0;
+		int l = 5;
 		loadScreen(SCREEN);
 	}
 	// loadScreen(splashScreen);
